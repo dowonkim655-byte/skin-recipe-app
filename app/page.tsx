@@ -29,7 +29,7 @@ export default function OnboardingPage() {
           내 피부 레시피
         </h1>
         <p className="text-text-secondary text-sm leading-relaxed">
-          5가지 질문으로 나만을 위한<br />
+          6가지 질문으로 나만을 위한<br />
           맞춤 원료 배합 레시피를 찾아드려요
         </p>
       </div>
@@ -38,7 +38,7 @@ export default function OnboardingPage() {
       <div className="flex flex-col gap-3 flex-1">
         <FeatureItem
           icon="🔬"
-          title="5문항 피부 분석"
+          title="6문항 피부 분석"
           desc="피부 타입, 민감도, 고민을 바탕으로 정밀하게 분석해요"
         />
         <FeatureItem
