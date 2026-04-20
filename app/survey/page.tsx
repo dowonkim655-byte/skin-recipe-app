@@ -84,10 +84,10 @@ const QUESTIONS: Question[] = [
     id: 'texture',
     question: '선호하는 제품 질감은 무엇인가요?',
     subtitle: '사용할 때 가장 만족스러운 질감을 선택하세요',
-    emoji: '🫧',
+    emoji: '🧴',
     options: [
       { value: '가벼운', label: '가볍고 촉촉한', desc: '워터/토너처럼 산뜻해요', icon: '💧' },
-      { value: '젤', label: '쫀쫀한 젤', desc: '젤/에센스 타입이 좋아요', icon: '🫧' },
+      { value: '젤', label: '쫀쫀한 젤', desc: '젤/에센스 타입이 좋아요', icon: '🧴' },
       { value: '크림', label: '풍성한 크림', desc: '크림처럼 촉촉하고 영양진 게 좋아요', icon: '🧴' },
       { value: '오일', label: '깊은 영양', desc: '오일감 있는 풍부한 제품이 좋아요', icon: '💆' },
       { value: '무향저자극', label: '무향·저자극 선호', desc: '향 없고 자극 적은 제품이 최우선이에요', icon: '🌿' },
