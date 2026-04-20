@@ -2,6 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RecipeEntry, SurveyAnswers, Ingredient } from '@/types';
+import {
+  getIngredientMeta,
+  calcAmountG,
+  calcIngredientCost,
+  getShelfLife,
+  hasOilIngredients,
+} from '@/lib/ingredientMeta';
 
 const LABEL_MAP: Record<string, Record<string, string>> = {
   skinType: {
@@ -25,6 +32,19 @@ const AVOID_LABEL: Record<string, string> = {
   글루텐프리: '글루텐 프리', 비건: '비건 성분',
 };
 
+const MARKET_PRICE = 35000;
+
+const TOOLS = [
+  '유리 비커 50~100ml',
+  '유리 막대 또는 미니 거품기',
+  '정밀 저울 (0.01g 단위)',
+  '온도계 (가열 레시피용)',
+  'pH 시험지 (pH 4.5~6.5 확인)',
+  '소독용 에탄올 70%',
+  '소분용 펌프 용기 30ml',
+  '정제수 (남은 용량 채우기용)',
+];
+
 function Tag({ label }: { label: string }) {
   return (
     <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium"
@@ -41,6 +61,289 @@ function Toast({ visible }: { visible: boolean }) {
       style={{ opacity: visible ? 1 : 0, transform: `translateX(-50%) translateY(${visible ? 0 : '8px'})` }}
     >
       링크가 복사됐어요! 🔗
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+      {children}
+    </p>
+  );
+}
+
+function IngredientDetailCard({ ing, idx }: { ing: Ingredient; idx: number }) {
+  const meta = getIngredientMeta(ing.name);
+  const amountG = calcAmountG(ing.ratio);
+  const cost = meta ? calcIngredientCost(ing.ratio, meta.pricePerGram) : null;
+
+  function openSearch(site: 'coupang' | 'naver') {
+    if (!meta) return;
+    const q = encodeURIComponent(meta.searchKeyword);
+    const url = site === 'coupang'
+      ? `https://www.coupang.com/np/search?q=${q}`
+      : `https://search.shopping.naver.com/search/all?query=${q}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+      {/* Header */}
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+             style={{ backgroundColor: '#b97070' }}>
+          {idx + 1}
+        </div>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-text-primary text-sm">{ing.name}</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                  style={{ backgroundColor: '#c4a882' }}>
+              {ing.ratio}
+            </span>
+          </div>
+          {meta && (
+            <p className="text-xs text-text-muted mt-1 leading-relaxed">{meta.beginnerDesc}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Info row */}
+      <div className="flex gap-2 mb-3 flex-wrap">
+        <div className="bg-stone-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+          <p className="text-xs text-text-muted mb-0.5">30ml 기준 필요량</p>
+          <p className="text-sm font-semibold text-text-primary">{amountG}g</p>
+        </div>
+        {cost !== null && (
+          <div className="bg-rose-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+            <p className="text-xs text-text-muted mb-0.5">예상 원가</p>
+            <p className="text-sm font-semibold" style={{ color: '#b97070' }}>
+              약 {cost.toLocaleString()}원
+            </p>
+          </div>
+        )}
+        {meta && (
+          <div className="bg-amber-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+            <p className="text-xs text-text-muted mb-0.5">시중 구매가</p>
+            <p className="text-xs font-medium text-amber-700">{meta.priceRange}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Search buttons */}
+      {meta && (
+        <div className="flex gap-2">
+          <button
+            onClick={() => openSearch('coupang')}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
+            style={{ backgroundColor: '#e5401b' }}
+          >
+            쿠팡에서 찾기
+          </button>
+          <button
+            onClick={() => openSearch('naver')}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
+            style={{ backgroundColor: '#03c75a' }}
+          >
+            네이버 쇼핑
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CostTable({ ingredients }: { ingredients: Ingredient[] }) {
+  const rows = ingredients.map((ing) => {
+    const meta = getIngredientMeta(ing.name);
+    const cost = meta ? calcIngredientCost(ing.ratio, meta.pricePerGram) : 0;
+    return { name: ing.name.split(' (')[0], ratio: ing.ratio, cost };
+  });
+  const total = rows.reduce((s, r) => s + r.cost, 0);
+  const saving = total < MARKET_PRICE ? Math.round(((MARKET_PRICE - total) / MARKET_PRICE) * 100) : 0;
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <SectionTitle>30ml 예상 원가 계산</SectionTitle>
+      <div className="flex flex-col gap-1 mb-3">
+        {rows.map((r, i) => (
+          <div key={i} className="flex justify-between items-center py-1.5 border-b border-stone-50">
+            <div>
+              <span className="text-xs text-text-primary font-medium">{r.name}</span>
+              <span className="text-xs text-text-muted ml-2">{r.ratio}</span>
+            </div>
+            <span className="text-xs font-semibold text-text-secondary">
+              {r.cost > 0 ? `${r.cost.toLocaleString()}원` : '-'}
+            </span>
+          </div>
+        ))}
+        <div className="flex justify-between items-center pt-2">
+          <span className="text-sm font-bold text-text-primary">총 원가</span>
+          <span className="text-base font-bold" style={{ color: '#b97070' }}>
+            {total.toLocaleString()}원
+          </span>
+        </div>
+      </div>
+      {saving > 0 && (
+        <div className="rounded-xl p-3 text-center" style={{ backgroundColor: '#fde8e6' }}>
+          <p className="text-xs" style={{ color: '#8b4040' }}>
+            시중 유사 제품(약 {MARKET_PRICE.toLocaleString()}원) 대비
+          </p>
+          <p className="text-lg font-bold mt-0.5" style={{ color: '#b97070' }}>
+            약 {saving}% 절약!
+          </p>
+        </div>
+      )}
+      <p className="text-xs text-text-muted mt-2 text-center leading-relaxed">
+        * 원가는 시중 최저가 기준 추정치예요. 구매처·수량에 따라 달라질 수 있어요.
+      </p>
+    </div>
+  );
+}
+
+function ManufacturingGuide({ ingredients }: { ingredients: Ingredient[] }) {
+  const hasOil = hasOilIngredients(ingredients);
+  const hasRetinol = ingredients.some((i) => i.name.includes('레티놀'));
+
+  const steps = [
+    {
+      title: '도구 소독',
+      desc: '비커, 유리 막대, 계량 스푼에 70% 에탄올을 분무하고 자연 건조하세요. (약 5분)',
+    },
+    {
+      title: '정제수 계량',
+      desc: '정제수를 비커에 먼저 담아 베이스를 만들어요. 원료 합산 비율을 뺀 나머지 용량이 정제수예요.',
+    },
+    {
+      title: '수용성 원료 투입',
+      desc: '나이아신아마이드, 히알루론산, 글리세린 등 물에 녹는 원료를 하나씩 투입하세요.',
+    },
+    {
+      title: '충분히 교반',
+      desc: '유리 막대로 3~5분 고르게 섞어요. 원료가 완전히 녹아 맑아질 때까지 저어주세요.',
+    },
+    ...(hasOil ? [{
+      title: '오일류 투입',
+      desc: '스쿠알란, 비타민E 등 오일 성분을 소량씩 추가하며 충분히 섞어요. 유화제가 없으면 분리될 수 있으니 사용 전 흔들어 주세요.',
+    }] : []),
+    ...(hasRetinol ? [{
+      title: '레티놀 주의 투입',
+      desc: '레티놀은 빛에 약해요. 빛을 차단한 상태에서 소량 투입하고 빠르게 섞어주세요.',
+    }] : []),
+    {
+      title: 'pH 확인',
+      desc: 'pH 시험지를 사용해 pH 4.5~6.5 사이인지 확인하세요. AHA/BHA 포함 레시피는 pH 3.5~4.5가 적합해요.',
+    },
+    {
+      title: '용기에 담기',
+      desc: '소독된 30ml 펌프 용기에 옮겨 담고 제조일과 성분명을 라벨에 적어 부착하세요.',
+    },
+  ];
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <SectionTitle>제조 가이드 (약 15~20분 소요)</SectionTitle>
+
+      {/* Tools */}
+      <div className="bg-stone-50 rounded-xl p-3 mb-4">
+        <p className="text-xs font-semibold text-text-secondary mb-2">필요한 도구</p>
+        <div className="flex flex-col gap-1.5">
+          {TOOLS.map((tool, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded border-2 border-stone-300 flex-shrink-0 flex items-center justify-center text-xs text-stone-400">
+                ☐
+              </span>
+              <span className="text-xs text-text-secondary">{tool}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div className="flex flex-col gap-3">
+        {steps.map((step, i) => (
+          <div key={i} className="flex gap-3">
+            <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                 style={{ backgroundColor: '#c4a882' }}>
+              {i + 1}
+            </div>
+            <div className="flex-1 pt-0.5">
+              <p className="text-xs font-semibold text-text-primary mb-0.5">{step.title}</p>
+              <p className="text-xs text-text-muted leading-relaxed">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StorageGuide({ ingredients }: { ingredients: Ingredient[] }) {
+  const { days, reason } = getShelfLife(ingredients);
+  const hasRetinol = ingredients.some((i) => i.name.includes('레티놀'));
+  const hasAHA = ingredients.some((i) => i.name.includes('젖산') || i.name.includes('살리실산') || i.name.includes('아스코르빌'));
+
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm">
+      <SectionTitle>보관 및 유통기한 안내</SectionTitle>
+
+      {/* Shelf life badge */}
+      <div className="flex items-center gap-3 bg-amber-50 rounded-xl p-3 mb-4">
+        <span className="text-2xl flex-shrink-0">📅</span>
+        <div>
+          <p className="text-xs text-amber-700 mb-0.5">{reason}</p>
+          <p className="text-sm font-bold text-amber-800">제조 후 {days}일 이내 사용 권장</p>
+        </div>
+      </div>
+
+      {/* Storage tips */}
+      <div className="flex flex-col gap-2">
+        {[
+          {
+            icon: '❄️',
+            text: hasRetinol || hasAHA
+              ? '냉장 보관 (4°C 이하) 필수예요. 빛과 열이 성분을 빠르게 분해해요.'
+              : '서늘하고 건조한 곳에 보관하세요. 냉장 보관 시 유효 기간이 더 늘어요.',
+          },
+          { icon: '🌑', text: '직사광선을 피해야 해요. 차광 용기를 사용하거나 어두운 곳에 두세요.' },
+          { icon: '🤲', text: '사용 후 뚜껑을 꼭 닫고, 손가락 직접 접촉은 피하세요. (오염 방지)' },
+          {
+            icon: '👃',
+            text: '냄새 변화, 색 변화, 층 분리 현상이 보이면 즉시 폐기하세요.',
+          },
+        ].map((tip, i) => (
+          <div key={i} className="flex gap-2.5">
+            <span className="text-base flex-shrink-0">{tip.icon}</span>
+            <p className="text-xs text-text-secondary leading-relaxed">{tip.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KitCTA() {
+  return (
+    <div className="rounded-2xl p-5 text-center"
+         style={{ background: 'linear-gradient(135deg, #fde8e6 0%, #faf0e8 100%)' }}>
+      <p className="text-lg mb-1">🛒</p>
+      <p className="font-semibold text-sm mb-1" style={{ color: '#8b4040' }}>
+        재료 직접 구매하기 번거로우신가요?
+      </p>
+      <p className="text-xs leading-relaxed mb-4" style={{ color: '#a05050' }}>
+        레시피 맞춤 원료 키트를 한 번에 받아볼 수 있어요.<br />
+        계량 완료 + 설명서 포함으로 바로 제조 가능해요.
+      </p>
+      <a
+        href="https://www.notion.so/348a1144f91981819a33df34951fd42d"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block w-full py-3.5 rounded-2xl font-semibold text-sm text-white transition-all duration-200 active:scale-95"
+        style={{ backgroundColor: '#b97070', boxShadow: '0 4px 14px rgba(185,112,112,0.25)' }}
+      >
+        원료 키트 구매하기 →
+      </a>
     </div>
   );
 }
@@ -94,7 +397,6 @@ export default function ResultPage() {
     try {
       await navigator.clipboard.writeText(window.location.href);
     } catch {
-      // fallback for older browsers
       const el = document.createElement('textarea');
       el.value = window.location.href;
       document.body.appendChild(el);
@@ -172,7 +474,7 @@ export default function ResultPage() {
             <p className="text-sm text-text-secondary leading-relaxed">{recipe.diagnosisDesc}</p>
           </div>
 
-          {/* Ingredients */}
+          {/* Ingredients (compact overview for image capture) */}
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">원료 배합 레시피</p>
@@ -254,6 +556,42 @@ export default function ResultPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* --- DIY 초보자 가이드 (이미지 저장 영역 외) --- */}
+      <div className="px-5 mt-6 space-y-4">
+        {/* Section divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-beige" />
+          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#b97070' }}>
+            DIY 초보자 가이드
+          </p>
+          <div className="flex-1 h-px bg-beige" />
+        </div>
+
+        {/* Ingredient detail cards */}
+        <div>
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+            원료별 초보자 가이드 + 구매 링크
+          </p>
+          <div className="flex flex-col gap-3">
+            {recipe.ingredients.map((ing, idx) => (
+              <IngredientDetailCard key={idx} ing={ing} idx={idx} />
+            ))}
+          </div>
+        </div>
+
+        {/* Cost table */}
+        <CostTable ingredients={recipe.ingredients} />
+
+        {/* Manufacturing guide */}
+        <ManufacturingGuide ingredients={recipe.ingredients} />
+
+        {/* Storage guide */}
+        <StorageGuide ingredients={recipe.ingredients} />
+
+        {/* Kit CTA */}
+        <KitCTA />
       </div>
 
       {/* Action buttons */}
