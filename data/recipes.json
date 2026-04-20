@@ -343,7 +343,8 @@
         {
           "name": "오트밀 추출물 (Colloidal Oat Extract)",
           "ratio": "2%",
-          "benefit": "민감성 피부 진정의 클래식 성분, 가려움 및 자극 완화, 피부 보호막 형성"
+          "benefit": "민감성 피부 진정의 클래식 성분, 가려움 및 자극 완화, 피부 보호막 형성",
+          "avoidTags": ["글루텐프리"]
         },
         {
           "name": "알란토인 (Allantoin)",
@@ -610,7 +611,7 @@
           "name": "가수분해 콜라겐 (Hydrolyzed Collagen)",
           "ratio": "3%",
           "benefit": "목 피부 탄력 개선 보조, 보습막 형성으로 피부 처짐 예방",
-          "avoidTags": []
+          "avoidTags": ["비건"]
         },
         {
           "name": "세라마이드 NP (Ceramide NP)",

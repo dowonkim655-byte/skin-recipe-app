@@ -17,6 +17,7 @@ interface Question {
   subtitle: string;
   emoji: string;
   multiSelect?: boolean;
+  maxSelect?: number;
   options: Option[];
 }
 
@@ -50,8 +51,10 @@ const QUESTIONS: Question[] = [
   },
   {
     id: 'concern',
-    question: '가장 큰 피부 고민은 무엇인가요?',
-    subtitle: '지금 가장 해결하고 싶은 고민 하나를 선택하세요',
+    multiSelect: true,
+    maxSelect: 3,
+    question: '어떤 피부 고민이 있나요?',
+    subtitle: '해당하는 것을 모두 선택하세요 (최대 3개)',
     emoji: '🔍',
     options: [
       { value: '보습', label: '보습 / 건조함', desc: '항상 건조하고 당기는 느낌이에요', icon: '💦' },
@@ -102,6 +105,8 @@ const QUESTIONS: Question[] = [
       { value: '향료', label: '향료·인공향', desc: '향료에 민감하거나 알레르기가 있어요', icon: '🌸' },
       { value: '파라벤', label: '파라벤', desc: '파라벤 계열 방부제를 피하고 싶어요', icon: '🧪' },
       { value: '실리콘', label: '실리콘', desc: '실리콘 계열 성분을 원하지 않아요', icon: '💧' },
+      { value: '글루텐프리', label: '글루텐 프리 원료만', desc: '글루텐 함유 성분을 피하고 싶어요', icon: '🌾' },
+      { value: '비건', label: '비건 성분만', desc: '동물 유래 성분을 사용하지 않아요', icon: '🌱' },
       { value: '없음', label: '특별히 없음', desc: '성분 제한 없이 효과를 최우선으로', icon: '✅' },
     ],
   },
@@ -122,6 +127,11 @@ export default function SurveyPage() {
   const question = QUESTIONS[currentStep];
   const progress = ((currentStep + 1) / QUESTIONS.length) * 100;
   const isMulti = !!question.multiSelect;
+  const maxSelect = question.maxSelect;
+
+  const selectedArr = (selected as string[]) || [];
+  const selectedCount = selectedArr.filter((v) => v !== '없음').length;
+  const maxReached = !!maxSelect && selectedCount >= maxSelect;
 
   function handleSelect(value: string) {
     if (isMulti) {
@@ -131,11 +141,11 @@ export default function SurveyPage() {
       } else {
         const withoutNone = current.filter((v) => v !== '없음');
         if (withoutNone.includes(value)) {
-          const next = withoutNone.filter((v) => v !== value);
-          setSelected(next.length ? next : []);
-        } else {
+          setSelected(withoutNone.filter((v) => v !== value));
+        } else if (!maxSelect || withoutNone.length < maxSelect) {
           setSelected([...withoutNone, value]);
         }
+        // at max: do nothing
       }
     } else {
       setSelected(value);
@@ -149,7 +159,6 @@ export default function SurveyPage() {
 
   function handleNext() {
     if (!isValid(selected)) return;
-
     const newAnswers: Record<string, AnswerValue> = {
       ...answers,
       [question.id]: selected as AnswerValue,
@@ -208,24 +217,36 @@ export default function SurveyPage() {
         <h2 className="text-xl font-semibold text-text-primary mb-1.5 leading-snug">
           {question.question}
         </h2>
-        <p className="text-text-muted text-sm">{question.subtitle}</p>
-        {isMulti && (
-          <p className="text-xs mt-1 font-medium" style={{ color: '#b97070' }}>
-            복수 선택 가능
-          </p>
-        )}
+        <div className="flex items-center justify-between">
+          <p className="text-text-muted text-sm">{question.subtitle}</p>
+          {maxSelect && (
+            <p
+              className="text-sm font-bold ml-3 flex-shrink-0 transition-colors duration-200"
+              style={{ color: maxReached ? '#b97070' : '#a08878' }}
+            >
+              {selectedCount} / {maxSelect}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Options */}
       <div className="flex flex-col gap-2.5 flex-1 animate-fadeIn" key={`opts-${currentStep}`}>
         {question.options.map((option) => {
           const sel = isOptionSelected(option.value);
+          const isDisabled = maxReached && !sel && option.value !== '없음';
+
           return (
             <button
               key={option.value}
-              onClick={() => handleSelect(option.value)}
+              onClick={() => !isDisabled && handleSelect(option.value)}
+              disabled={isDisabled}
               className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
-                sel ? 'shadow-sm' : 'border-transparent bg-white hover:border-beige'
+                isDisabled
+                  ? 'border-transparent bg-white opacity-35 cursor-not-allowed'
+                  : sel
+                  ? 'shadow-sm'
+                  : 'border-transparent bg-white hover:border-beige'
               }`}
               style={sel ? { borderColor: '#b97070', backgroundColor: '#fde8e6' } : {}}
             >
@@ -239,7 +260,6 @@ export default function SurveyPage() {
                 </p>
                 <p className="text-text-muted text-xs mt-0.5">{option.desc}</p>
               </div>
-              {/* Single: radio, Multi: checkbox */}
               <div
                 className={`flex-shrink-0 flex items-center justify-center transition-all ${
                   isMulti
@@ -251,7 +271,9 @@ export default function SurveyPage() {
                 {sel && (
                   <div
                     className={`animate-checkPop flex items-center justify-center ${
-                      isMulti ? 'w-full h-full rounded-sm text-white text-xs font-bold' : 'w-2.5 h-2.5 rounded-full'
+                      isMulti
+                        ? 'w-full h-full rounded-sm text-white text-xs font-bold'
+                        : 'w-2.5 h-2.5 rounded-full'
                     }`}
                     style={{ backgroundColor: '#b97070' }}
                   >

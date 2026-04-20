@@ -1,7 +1,7 @@
 export interface SurveyAnswers {
   skinType: string;
   sensitivity: string;
-  concern: string;
+  concern: string[];        // multi-select (max 3)
   routine: string;
   texture: string;
   avoidIngredients: string[];
