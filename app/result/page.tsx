@@ -257,12 +257,18 @@ export default function ResultPage() {
       </div>
 
       {/* Action buttons */}
-      <div className="px-5 pt-5 flex flex-col gap-3">
+      <div className="px-5 pt-6 pb-12 flex flex-col gap-3">
+        <p className="text-xs text-center text-text-muted mb-1">레시피 저장 또는 공유하기</p>
+
         <button
           onClick={handleSaveImage}
           disabled={isSaving}
-          className="w-full py-4 rounded-2xl font-semibold text-base text-white transition-all duration-200 active:scale-95 shadow-md flex items-center justify-center gap-2"
-          style={{ backgroundColor: '#b97070', boxShadow: '0 4px 14px rgba(185,112,112,0.3)', opacity: isSaving ? 0.7 : 1 }}
+          className="w-full py-4 rounded-2xl font-semibold text-base text-white transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: '#b97070',
+            boxShadow: '0 4px 14px rgba(185,112,112,0.3)',
+            opacity: isSaving ? 0.7 : 1,
+          }}
         >
           {isSaving ? (
             <>
@@ -270,7 +276,7 @@ export default function ResultPage() {
               저장 중...
             </>
           ) : (
-            '📷 이미지로 저장하기'
+            '📷  이미지로 저장하기'
           )}
         </button>
 
@@ -279,14 +285,15 @@ export default function ResultPage() {
           className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95 border-2"
           style={{ borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
         >
-          🔗 링크 복사하기
+          🔗  링크 복사하기
         </button>
 
         <button
           onClick={() => { sessionStorage.clear(); router.push('/'); }}
-          className="w-full py-4 rounded-2xl font-semibold text-base text-text-secondary transition-all duration-200 active:scale-95 bg-beige"
+          className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95"
+          style={{ backgroundColor: '#f0e8dc', color: '#6b5040' }}
         >
-          다시 진단하기
+          🔄  다시 진단하기
         </button>
       </div>
 
