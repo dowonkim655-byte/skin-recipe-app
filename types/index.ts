@@ -1,0 +1,38 @@
+export interface SurveyAnswers {
+  skinType: string;
+  sensitivity: string;
+  concern: string;
+  routine: string;
+  texture: string;
+}
+
+export interface Ingredient {
+  name: string;
+  ratio: string;
+  benefit: string;
+}
+
+export interface RecipeEntry {
+  id: string;
+  name: string;
+  matchCriteria: {
+    skinType: string[];
+    concern: string[];
+  };
+  skinDiagnosis: string;
+  diagnosisDesc: string;
+  ingredients: Ingredient[];
+  textureSuggestion: string;
+  application: string;
+  tips: string[];
+  sensitivityNote: string;
+}
+
+export interface RecipesData {
+  recipes: RecipeEntry[];
+}
+
+export interface RecommendResult {
+  recipe: RecipeEntry;
+  answers: SurveyAnswers;
+}
