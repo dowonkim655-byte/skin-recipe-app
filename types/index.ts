@@ -4,12 +4,14 @@ export interface SurveyAnswers {
   concern: string;
   routine: string;
   texture: string;
+  avoidIngredients: string[];
 }
 
 export interface Ingredient {
   name: string;
   ratio: string;
   benefit: string;
+  avoidTags?: string[];
 }
 
 export interface RecipeEntry {
@@ -35,4 +37,5 @@ export interface RecipesData {
 export interface RecommendResult {
   recipe: RecipeEntry;
   answers: SurveyAnswers;
+  filteredOut: Ingredient[];
 }

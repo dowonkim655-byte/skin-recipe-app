@@ -5,6 +5,6 @@ import type { SurveyAnswers, RecipeEntry } from '@/types';
 
 export async function POST(request: NextRequest) {
   const answers: SurveyAnswers = await request.json();
-  const recipe = findBestRecipe(answers, recipesData.recipes as RecipeEntry[]);
-  return NextResponse.json(recipe);
+  const { recipe, filteredOut } = findBestRecipe(answers, recipesData.recipes as RecipeEntry[]);
+  return NextResponse.json({ recipe, filteredOut });
 }
