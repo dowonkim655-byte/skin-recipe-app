@@ -43,9 +43,10 @@ export default function AnalysisPage() {
           'skinRecipeResult',
           JSON.stringify({ recipe: data.recipe, filteredOut: data.filteredOut, answers })
         );
+        const encoded = encodeURIComponent(btoa(JSON.stringify(answers)));
+        router.push(`/result?d=${encoded}`);
       } catch (e) {
         console.error(e);
-      } finally {
         router.push('/result');
       }
     }, 4400);

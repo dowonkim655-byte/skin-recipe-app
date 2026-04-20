@@ -358,6 +358,27 @@ export default function ResultPage() {
   const [toastVisible, setToastVisible] = useState(false);
 
   useEffect(() => {
+    // Try URL param first (shareable link)
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get('d');
+    if (encoded) {
+      try {
+        const decodedAnswers = JSON.parse(atob(decodeURIComponent(encoded)));
+        setAnswers(decodedAnswers);
+        fetch('/api/recommend', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(decodedAnswers),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            setRecipe(data.recipe);
+            setFilteredOut(data.filteredOut ?? []);
+          });
+        return;
+      } catch { /* fall through */ }
+    }
+    // Fallback: sessionStorage
     const raw = sessionStorage.getItem('skinRecipeResult');
     if (!raw) { router.replace('/'); return; }
     const data = JSON.parse(raw);
@@ -366,7 +387,12 @@ export default function ResultPage() {
     setFilteredOut(data.filteredOut ?? []);
   }, [router]);
 
-  if (!recipe || !answers) return null;
+  if (!recipe || !answers) return (
+    <main className="min-h-screen bg-cream flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+           style={{ borderColor: '#dfa8a8', borderTopColor: 'transparent' }} />
+    </main>
+  );
 
   const concerns = Array.isArray(answers.concern) ? answers.concern : [answers.concern];
   const activeAvoid = (answers.avoidIngredients ?? []).filter((a) => a !== '없음');
@@ -384,10 +410,24 @@ export default function ResultPage() {
         useCORS: true,
         logging: false,
       });
+      const fileName = `내피부레시피_${recipe?.name ?? ''}.png`;
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), 'image/png')
+      );
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      // iOS/modern mobile: use Web Share API to save to photo library
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: recipe?.name ?? '내 피부 레시피' });
+        return;
+      }
+      // Desktop & Android: direct download
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `내피부레시피_${recipe?.name ?? ''}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = fileName;
+      link.href = url;
       link.click();
+      URL.revokeObjectURL(url);
     } finally {
       setIsSaving(false);
     }
