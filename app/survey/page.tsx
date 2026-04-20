@@ -129,7 +129,7 @@ export default function SurveyPage() {
   const isMulti = !!question.multiSelect;
   const maxSelect = question.maxSelect;
 
-  const selectedArr = (selected as string[]) || [];
+  const selectedArr = Array.isArray(selected) ? selected : [];
   const selectedCount = selectedArr.filter((v) => v !== '없음').length;
   const maxReached = !!maxSelect && selectedCount >= maxSelect;
 
