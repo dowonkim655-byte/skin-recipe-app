@@ -1,9 +1,28 @@
 import type { Metadata } from 'next';
 import './globals.css';
 
+const BASE_URL = 'https://skin-recipe-app.vercel.app';
+
 export const metadata: Metadata = {
-  title: '내 피부 레시피',
-  description: '5문항 피부 설문으로 나만을 위한 맞춤 원료 배합 레시피를 받아보세요.',
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: '내 피부 레시피',
+    template: '%s | 내 피부 레시피',
+  },
+  description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
+  openGraph: {
+    title: '내 피부 레시피',
+    description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
+    url: BASE_URL,
+    siteName: '내 피부 레시피',
+    locale: 'ko_KR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '내 피부 레시피',
+    description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
