@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface IngredientInfo {
   name: string;
@@ -357,10 +357,30 @@ const INGREDIENTS: IngredientInfo[] = [
 const CATEGORIES = ['전체', '보습', '미백', '진정', '안티에이징', '각질케어', '모공/피지', '눈가케어', '항산화'];
 const DIFFICULTY_COLORS = { '쉬움': '#10b981', '보통': '#f59e0b', '주의': '#ef4444' };
 
-export default function IngredientsPage() {
+export default function IngredientsPageWrapper() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-cream flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+             style={{ borderColor: '#dfa8a8', borderTopColor: 'transparent' }} />
+      </main>
+    }>
+      <IngredientsPage />
+    </Suspense>
+  );
+}
+
+function IngredientsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('전체');
+
+  // URL ?q= 파라미터로 초기 검색어 설정 (성분 모달 딥링크)
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) setQuery(q);
+  }, [searchParams]);
 
   const filtered = INGREDIENTS.filter((ing) => {
     const matchQuery = query === '' ||

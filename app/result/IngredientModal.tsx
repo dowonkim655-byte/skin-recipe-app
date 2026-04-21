@@ -1,9 +1,15 @@
+import Link from 'next/link';
 import type { Ingredient } from '@/types';
 import {
   getIngredientMeta,
   calcAmountG,
   calcIngredientCost,
 } from '@/lib/ingredientMeta';
+
+// 성분 이름에서 괄호 앞 한국어 이름만 추출 (검색용)
+function extractKoreanName(fullName: string): string {
+  return fullName.split(' (')[0].trim();
+}
 
 function openShop(keyword: string, site: 'coupang' | 'naver') {
   const q = encodeURIComponent(keyword);
@@ -97,7 +103,7 @@ export default function IngredientModal({ ing, onClose }: Props) {
 
         {/* Buy buttons */}
         {meta && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-3">
             <button
               onClick={() => openShop(meta.searchKeyword, 'coupang')}
               className="flex-1 py-3 rounded-2xl text-sm font-semibold text-white active:scale-95 transition-all"
@@ -114,6 +120,16 @@ export default function IngredientModal({ ing, onClose }: Props) {
             </button>
           </div>
         )}
+
+        {/* Deep link to ingredients page */}
+        <Link
+          href={`/ingredients?q=${encodeURIComponent(extractKoreanName(ing.name))}`}
+          onClick={onClose}
+          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-2xl text-xs font-semibold transition-all active:scale-95"
+          style={{ backgroundColor: '#fde8e6', color: '#b97070' }}
+        >
+          🔍 성분 사전에서 자세히 보기
+        </Link>
       </div>
     </div>
   );
