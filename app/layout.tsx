@@ -6,6 +6,9 @@ const BASE_URL = 'https://skin-recipe-app.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+  verification: {
+    google: 'IyjPRbKw1MMuz3uyWYeNb8htnaJ7Rf15qKTv35qHFlc',
+  },
   title: {
     default: '내 피부 레시피',
     template: '%s | 내 피부 레시피',
