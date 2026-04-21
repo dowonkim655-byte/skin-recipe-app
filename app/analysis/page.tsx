@@ -61,7 +61,7 @@ export default function AnalysisPage() {
         track('survey_complete', { skinType: answers.skinType, concern: String(answers.concern) });
         // TextEncoder로 유니코드(한글) 안전하게 base64 인코딩
         const bytes = new TextEncoder().encode(JSON.stringify(answers));
-        const encoded = btoa(String.fromCharCode(...bytes));
+        const encoded = btoa(String.fromCharCode(...Array.from(bytes)));
         router.push(`/result?d=${encoded}`);
       })
       .catch(() => {

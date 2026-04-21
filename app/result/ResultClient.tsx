@@ -592,7 +592,7 @@ export default function ResultClient() {
       content: {
         title: recipe!.name,
         description: recipe!.skinDiagnosis,
-        imageUrl: `${window.location.origin}/opengraph-image`,
+        imageUrl: `${window.location.origin}/api/og?name=${encodeURIComponent(recipe!.name)}&skin=${encodeURIComponent(recipe!.skinDiagnosis)}&ings=${encodeURIComponent(recipe!.ingredients.slice(0, 4).map((i) => i.name.split(' (')[0]).join(','))}`,
         link: {
           mobileWebUrl: window.location.href,
           webUrl: window.location.href,

@@ -17,6 +17,8 @@ function decodeAnswers(encoded: string): SurveyAnswers | null {
   }
 }
 
+const BASE = 'https://skin-recipe-app.vercel.app';
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const raw = Array.isArray(searchParams.d) ? searchParams.d[0] : searchParams.d;
   if (!raw) return { title: '내 피부 레시피 결과' };
@@ -27,6 +29,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   try {
     const { recipe } = findBestRecipe(answers, recipesData.recipes as RecipeEntry[]);
     const desc = `${recipe.skinDiagnosis} - ${recipe.diagnosisDesc.slice(0, 80)}...`;
+    const ingNames = recipe.ingredients
+      .slice(0, 4)
+      .map((i: { name: string }) => i.name.split(' (')[0])
+      .join(',');
+    const ogImage = `${BASE}/api/og?name=${encodeURIComponent(recipe.name)}&skin=${encodeURIComponent(recipe.skinDiagnosis)}&ings=${encodeURIComponent(ingNames)}`;
+
     return {
       title: recipe.name,
       description: desc,
@@ -34,11 +42,13 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
         title: `${recipe.name} | 내 피부 레시피`,
         description: recipe.skinDiagnosis,
         type: 'website',
+        images: [{ url: ogImage, width: 1200, height: 630, alt: recipe.name }],
       },
       twitter: {
         card: 'summary_large_image',
         title: `${recipe.name} | 내 피부 레시피`,
         description: recipe.skinDiagnosis,
+        images: [ogImage],
       },
     };
   } catch {

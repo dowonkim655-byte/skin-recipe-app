@@ -42,10 +42,27 @@ export const metadata: Metadata = {
   },
 };
 
+const webAppSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: '내 피부 레시피',
+  url: BASE_URL,
+  description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
+  applicationCategory: 'HealthApplication',
+  operatingSystem: 'Any',
+  inLanguage: 'ko',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
+  author: { '@type': 'Organization', name: '내 피부 레시피' },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
       <body className="bg-cream min-h-screen">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
+        />
         <div className="max-w-md mx-auto min-h-screen relative">
           {children}
         </div>

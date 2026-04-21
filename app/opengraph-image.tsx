@@ -95,7 +95,7 @@ export default function Image() {
         {/* Stats row */}
         <div style={{ display: 'flex', gap: 20, marginBottom: 44 }}>
           {[
-            { value: '29+', label: '맞춤 레시피' },
+            { value: '36+', label: '맞춤 레시피' },
             { value: '30+', label: '검증된 성분' },
             { value: '무료', label: '완전 무료' },
           ].map((stat) => (
