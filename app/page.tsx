@@ -213,6 +213,33 @@ function SavedRecipes() {
   );
 }
 
+function MyRecipesLink() {
+  const router = useRouter();
+  const [hasData, setHasData] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('savedRecipes');
+      const history = localStorage.getItem('recipeHistory');
+      const savedCount = saved ? JSON.parse(saved).length : 0;
+      const historyCount = history ? JSON.parse(history).length : 0;
+      if (savedCount + historyCount > 0) setHasData(true);
+    } catch { /* ignore */ }
+  }, []);
+
+  if (!hasData) return null;
+
+  return (
+    <button
+      onClick={() => router.push('/my-recipes')}
+      className="w-full mb-5 py-3 rounded-2xl text-sm font-semibold transition-all active:scale-95 flex items-center justify-center gap-2 border-2"
+      style={{ borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
+    >
+      📁 내 레시피함 보기
+    </button>
+  );
+}
+
 const RECIPE_PREVIEWS = [
   {
     emoji: '💧',
@@ -295,6 +322,7 @@ export default function OnboardingPage() {
       <SeasonalBanner />
       <LastViewed />
       <SavedRecipes />
+      <MyRecipesLink />
 
       {/* Features */}
       <div className="flex flex-col gap-3 mb-8">

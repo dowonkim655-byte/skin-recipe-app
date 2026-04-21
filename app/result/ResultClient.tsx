@@ -10,6 +10,7 @@ import {
   calcIngredientCost,
   getShelfLife,
   hasOilIngredients,
+  analyzeCompatibility,
 } from '@/lib/ingredientMeta';
 
 declare global {
@@ -1040,6 +1041,41 @@ export default function ResultClient() {
                 <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">추천 제형</p>
                 <p className="text-sm font-medium text-text-primary">🧴 {recipe.textureSuggestion}</p>
               </div>
+
+              {/* 성분 궁합 카드 */}
+              {(() => {
+                const { conflicts, synergies } = analyzeCompatibility(recipe.ingredients);
+                if (conflicts.length === 0 && synergies.length === 0) return null;
+                return (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">🔗 이 레시피 성분 궁합</p>
+                    <div className="flex flex-col gap-2.5">
+                      {synergies.map((s, i) => (
+                        <div key={i} className="flex gap-2.5 rounded-xl p-2.5" style={{ backgroundColor: '#f0fdf4' }}>
+                          <span className="text-base flex-shrink-0">✨</span>
+                          <div>
+                            <p className="text-xs font-semibold mb-0.5" style={{ color: '#15803d' }}>
+                              {s.a} + {s.b}
+                            </p>
+                            <p className="text-xs leading-relaxed" style={{ color: '#166534' }}>{s.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {conflicts.map((c, i) => (
+                        <div key={i} className="flex gap-2.5 rounded-xl p-2.5" style={{ backgroundColor: '#fff7ed' }}>
+                          <span className="text-base flex-shrink-0">⚠️</span>
+                          <div>
+                            <p className="text-xs font-semibold mb-0.5 text-amber-800">
+                              {c.a} × {c.b}
+                            </p>
+                            <p className="text-xs leading-relaxed text-amber-700">{c.reason}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Application */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">

@@ -307,3 +307,61 @@ export function hasOilIngredients(ingredients: Ingredient[]): boolean {
     i.name.includes('레티놀') || i.name.includes('코엔자임') || i.name.includes('오일')
   );
 }
+
+// 알려진 시너지 조합 (a + b 순서 무관)
+const SYNERGY_PAIRS: { a: string; b: string; desc: string }[] = [
+  { a: '히알루론산', b: '글리세린', desc: '이중 수분 공급 - 표면과 심층 보습을 동시에 담당해요' },
+  { a: '나이아신아마이드', b: '알파아부틴', desc: '미백 이중 작용 - 멜라닌 합성·전달을 동시에 차단해요' },
+  { a: '세라마이드 NP', b: '스쿠알란', desc: '장벽 강화 시너지 - 지질 층을 물리적·화학적으로 복원해요' },
+  { a: '세라마이드 복합체', b: '스쿠알란', desc: '장벽 강화 시너지 - 지질 층을 물리적·화학적으로 복원해요' },
+  { a: '판테놀', b: '알란토인', desc: '진정·회복 시너지 - 자극을 빠르게 잡고 손상 피부를 재생해요' },
+  { a: '레티놀', b: '판테놀', desc: '레티놀 자극 완화 - 판테놀이 레티놀 부작용을 효과적으로 줄여줘요' },
+  { a: '아스코르빌 글루코사이드', b: '토코페롤', desc: '항산화 시너지 - 비타민 C+E 조합은 항산화력이 각각의 2~4배예요' },
+  { a: '나이아신아마이드', b: '판테놀', desc: '진정·미백 시너지 - 자극없이 피부 톤을 고르게 정돈해요' },
+  { a: '히알루론산', b: '판테놀', desc: '수분 유지 강화 - 보습+피부 재생으로 지속력이 높아져요' },
+  { a: '마데카소사이드', b: '알란토인', desc: '진정 이중 케어 - 피부 장벽 회복과 자극 완화를 함께 해요' },
+  { a: '살리실산', b: '나이아신아마이드', desc: '모공·트러블 케어 - 살리실산이 모공을 청소하고 나이아신아마이드가 모공 크기를 줄여요' },
+];
+
+export interface CompatibilityResult {
+  conflicts: { a: string; b: string; reason: string }[];
+  synergies: { a: string; b: string; desc: string }[];
+}
+
+export function analyzeCompatibility(ingredients: Ingredient[]): CompatibilityResult {
+  const names = ingredients.map((i) => i.name.split(' (')[0]);
+  const conflicts: CompatibilityResult['conflicts'] = [];
+  const synergies: CompatibilityResult['synergies'] = [];
+
+  // 충돌 검사
+  for (const ing of ingredients) {
+    const korName = ing.name.split(' (')[0];
+    const meta = getIngredientMeta(ing.name);
+    if (!meta?.incompatibleWith) continue;
+    for (const conflict of meta.incompatibleWith) {
+      // conflict는 설명 문자열 - 레시피 성분명과 키워드 매칭
+      const matchedName = names.find(
+        (n) => n !== korName && conflict.includes(n.slice(0, 4))
+      );
+      if (matchedName) {
+        const alreadyAdded = conflicts.some(
+          (c) => (c.a === korName && c.b === matchedName) || (c.a === matchedName && c.b === korName)
+        );
+        if (!alreadyAdded) {
+          conflicts.push({ a: korName, b: matchedName, reason: conflict });
+        }
+      }
+    }
+  }
+
+  // 시너지 검사
+  for (const pair of SYNERGY_PAIRS) {
+    const hasA = names.some((n) => n.includes(pair.a) || pair.a.includes(n));
+    const hasB = names.some((n) => n.includes(pair.b) || pair.b.includes(n));
+    if (hasA && hasB) {
+      synergies.push(pair);
+    }
+  }
+
+  return { conflicts, synergies };
+}
