@@ -403,6 +403,8 @@ export default function ResultClient() {
   const [batchSize, setBatchSize] = useState(30);
   const [purchasedIngs, setPurchasedIngs] = useState<Set<string>>(new Set());
   const [usageStartDate, setUsageStartDate] = useState<string | null>(null);
+  const [customizeMode, setCustomizeMode] = useState(false);
+  const [disabledIngs, setDisabledIngs] = useState<Set<string>>(new Set());
 
   // 신규 유저 감지 (공유 링크로 들어온 경우)
   useEffect(() => {
@@ -567,6 +569,24 @@ export default function ResultClient() {
       try { localStorage.setItem(`purchased_${recipe.id}`, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
       return next;
     });
+  }
+
+  function toggleDisabled(ingName: string) {
+    setDisabledIngs((prev) => {
+      const next = new Set(prev);
+      if (next.has(ingName)) next.delete(ingName); else next.add(ingName);
+      return next;
+    });
+  }
+
+  // 활성 성분 기준 비율 재계산 (총합 100%로 정규화)
+  function normalizedRatio(ing: Ingredient): string {
+    if (disabledIngs.has(ing.name)) return '0%';
+    const activeIngs = recipe!.ingredients.filter((i) => !disabledIngs.has(i.name));
+    const activeTotal = activeIngs.reduce((sum, i) => sum + parseRatio(i.ratio), 0);
+    if (activeTotal === 0) return '0%';
+    const norm = (parseRatio(ing.ratio) / activeTotal) * 100;
+    return `${norm.toFixed(1)}%`;
   }
 
   function parseRatio(ratio: string): number {
@@ -879,8 +899,30 @@ export default function ResultClient() {
               <div className="bg-white rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">원료 배합 레시피</p>
-                  <span className="text-xs text-text-muted">{recipe.ingredients.length}가지 성분</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-muted">{recipe.ingredients.length}가지 성분</span>
+                    <button
+                      onClick={() => { setCustomizeMode((v) => !v); if (customizeMode) setDisabledIngs(new Set()); }}
+                      className="text-xs font-semibold px-2.5 py-1 rounded-full transition-all active:scale-95"
+                      style={customizeMode
+                        ? { backgroundColor: '#b97070', color: 'white' }
+                        : { backgroundColor: '#fde8e6', color: '#b97070' }}
+                    >
+                      {customizeMode ? '✓ 커스터마이징 중' : '✏️ 커스터마이징'}
+                    </button>
+                  </div>
                 </div>
+
+                {/* 커스터마이징 안내 */}
+                {customizeMode && (
+                  <div className="rounded-xl p-3 mb-4 border" style={{ backgroundColor: '#fdf4ff', borderColor: '#e9d5ff' }}>
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#7c3aed' }}>✏️ 커스터마이징 모드</p>
+                    <p className="text-xs leading-relaxed" style={{ color: '#6d28d9' }}>
+                      성분을 켜고 끄면 나머지 성분의 비율이 자동으로 재계산돼요.
+                      {disabledIngs.size > 0 && ` (${disabledIngs.size}가지 제외 중)`}
+                    </p>
+                  </div>
+                )}
 
                 {/* 배합량 계산기 */}
                 <div className="rounded-xl p-3 mb-4" style={{ backgroundColor: '#faf7f3' }}>
@@ -907,38 +949,80 @@ export default function ResultClient() {
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  {recipe.ingredients.map((ing, idx) => (
-                    <div key={idx} className="flex gap-3">
-                      <div className="flex-shrink-0 pt-0.5">
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                             style={{ backgroundColor: '#b97070' }}>
-                          {idx + 1}
+                  {recipe.ingredients.map((ing, idx) => {
+                    const isDisabled = disabledIngs.has(ing.name);
+                    const displayRatio = customizeMode && !isDisabled ? normalizedRatio(ing) : ing.ratio;
+                    return (
+                      <div key={idx} className="flex gap-3 transition-opacity duration-200" style={{ opacity: isDisabled ? 0.38 : 1 }}>
+                        <div className="flex-shrink-0 pt-0.5">
+                          {customizeMode ? (
+                            <button
+                              onClick={() => toggleDisabled(ing.name)}
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all active:scale-90"
+                              style={{ backgroundColor: isDisabled ? '#d1d5db' : '#b97070' }}
+                              aria-label={isDisabled ? '성분 활성화' : '성분 비활성화'}
+                            >
+                              {isDisabled ? '✕' : '✓'}
+                            </button>
+                          ) : (
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                 style={{ backgroundColor: '#b97070' }}>
+                              {idx + 1}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <button
+                              onClick={() => setSelectedIng(ing)}
+                              className="font-semibold text-sm underline underline-offset-2 decoration-dotted active:opacity-70 text-left"
+                              style={{ textDecorationColor: '#b97070', color: isDisabled ? '#9ca3af' : undefined }}
+                            >
+                              {ing.name}
+                            </button>
+                            <span
+                              className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                              style={{ backgroundColor: isDisabled ? '#9ca3af' : customizeMode ? '#7c3aed' : '#c4a882' }}
+                            >
+                              {displayRatio}
+                            </span>
+                            {!isDisabled && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                    style={{ backgroundColor: '#f0e8dc', color: '#8b7060' }}>
+                                {calcGrams(displayRatio)}g
+                              </span>
+                            )}
+                            {!customizeMode && <span className="text-xs" style={{ color: '#b97070' }}>↗</span>}
+                          </div>
+                          <p className="text-text-muted text-xs leading-relaxed">{ing.benefit}</p>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <button
-                            onClick={() => setSelectedIng(ing)}
-                            className="font-semibold text-text-primary text-sm underline underline-offset-2 decoration-dotted active:opacity-70 text-left"
-                            style={{ textDecorationColor: '#b97070' }}
-                          >
-                            {ing.name}
-                          </button>
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                                style={{ backgroundColor: '#c4a882' }}>
-                            {ing.ratio}
-                          </span>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: '#f0e8dc', color: '#8b7060' }}>
-                            {calcGrams(ing.ratio)}g
-                          </span>
-                          <span className="text-xs" style={{ color: '#b97070' }}>↗</span>
-                        </div>
-                        <p className="text-text-muted text-xs leading-relaxed">{ing.benefit}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
+
+                {/* 커스터마이징 요약 */}
+                {customizeMode && disabledIngs.size > 0 && (
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-text-muted">활성 성분 합계</p>
+                      <span className="text-xs font-bold" style={{ color: '#7c3aed' }}>
+                        {recipe.ingredients
+                          .filter((i) => !disabledIngs.has(i.name))
+                          .reduce((sum, i) => sum + parseRatio(i.ratio), 0)
+                          .toLocaleString('ko-KR', { style: 'percent', minimumFractionDigits: 1 })}
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted mt-1">비율은 활성 성분 기준으로 자동 재분배돼요</p>
+                    <button
+                      onClick={() => setDisabledIngs(new Set())}
+                      className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95"
+                      style={{ backgroundColor: '#fde8e6', color: '#b97070' }}
+                    >
+                      전체 초기화
+                    </button>
+                  </div>
+                )}
                 {filteredOut.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-beige">
                     <p className="text-xs text-text-muted mb-1">회피 성분으로 제외된 원료:</p>
