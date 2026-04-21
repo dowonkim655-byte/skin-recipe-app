@@ -247,6 +247,15 @@ export default function OnboardingPage() {
       >
         내 피부 레시피 찾기 →
       </button>
+
+      {/* Secondary CTA */}
+      <button
+        onClick={() => router.push('/ingredients')}
+        className="w-full mt-3 active:scale-95 font-semibold py-4 rounded-2xl text-base transition-all duration-200 border-2"
+        style={{ color: '#b97070', borderColor: '#b97070', backgroundColor: 'transparent' }}
+      >
+        🔍 성분 사전 보기
+      </button>
     </main>
   );
 }

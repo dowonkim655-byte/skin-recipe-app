@@ -589,6 +589,22 @@ export default function ResultClient() {
     <main className="min-h-screen bg-cream animate-fadeIn">
       {/* Sticky tab bar */}
       <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm">
+        <div className="flex items-center px-3 pt-2 pb-1 gap-2">
+          <button
+            onClick={() => router.push('/')}
+            className="text-xs text-text-muted px-2 py-1 rounded-lg active:bg-stone-100 flex-shrink-0"
+          >
+            ← 홈
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={() => router.push('/ingredients')}
+            className="text-xs font-semibold px-3 py-1 rounded-full flex-shrink-0"
+            style={{ backgroundColor: '#fde8e6', color: '#b97070' }}
+          >
+            🔍 성분 사전
+          </button>
+        </div>
         <div className="flex">
           {TABS.map((tab) => (
             <button
