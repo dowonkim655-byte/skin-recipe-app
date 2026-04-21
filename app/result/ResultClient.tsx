@@ -3,12 +3,20 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RecipeEntry, SurveyAnswers, Ingredient } from '@/types';
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Kakao: any;
+  }
+}
+
 interface SavedRecipe {
   url: string;
   name: string;
   diagnosis: string;
   savedAt: string;
 }
+
 import {
   getIngredientMeta,
   calcAmountG,
@@ -50,6 +58,13 @@ const TOOLS = [
   '소독용 에탄올 70%',
   '소분용 펌프 용기 30ml',
   '정제수 (남은 용량 채우기용)',
+];
+
+type Tab = 'recipe' | 'diy' | 'purchase';
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'recipe', label: '🌸 레시피' },
+  { id: 'diy', label: '🧪 DIY 가이드' },
+  { id: 'purchase', label: '🛒 비용·구매' },
 ];
 
 function Tag({ label }: { label: string }) {
@@ -352,6 +367,23 @@ export default function ResultClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('recipe');
+
+  // Load Kakao SDK
+  useEffect(() => {
+    const key = process.env.NEXT_PUBLIC_KAKAO_JS_KEY;
+    if (!key) return;
+    if (window.Kakao?.isInitialized()) return;
+    const script = document.createElement('script');
+    script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js';
+    script.async = true;
+    script.onload = () => {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init(key);
+      }
+    };
+    document.head.appendChild(script);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -381,7 +413,6 @@ export default function ResultClient() {
     setFilteredOut(data.filteredOut ?? []);
   }, [router]);
 
-  // Check saved status after recipe loads
   useEffect(() => {
     if (!recipe) return;
     try {
@@ -401,6 +432,11 @@ export default function ResultClient() {
   const activeAvoid = (answers.avoidIngredients ?? []).filter((a) => a !== '없음');
   if (answers.texture === '무향저자극' && !activeAvoid.includes('향료')) activeAvoid.push('향료');
   const isOrganic = answers.texture === '천연오가닉';
+
+  function switchTab(tab: Tab) {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   async function handleSaveImage() {
     if (!resultRef.current || isSaving) return;
@@ -454,6 +490,32 @@ export default function ResultClient() {
     } catch { /* ignore */ }
   }
 
+  function handleKakaoShare() {
+    if (!window.Kakao?.isInitialized()) {
+      alert('카카오 SDK가 아직 로드되지 않았어요. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    window.Kakao.Share.sendDefault({
+      objectType: 'feed',
+      content: {
+        title: recipe!.name,
+        description: recipe!.skinDiagnosis,
+        imageUrl: `${window.location.origin}/opengraph-image`,
+        link: {
+          mobileWebUrl: window.location.href,
+          webUrl: window.location.href,
+        },
+      },
+      buttons: [{
+        title: '내 레시피 보기',
+        link: {
+          mobileWebUrl: window.location.href,
+          webUrl: window.location.href,
+        },
+      }],
+    });
+  }
+
   async function handleCopyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -470,219 +532,277 @@ export default function ResultClient() {
   }
 
   return (
-    <main className="min-h-screen bg-cream pb-10 animate-fadeIn">
-      <div ref={resultRef}>
-        <div className="px-5 pt-8 pb-6"
-             style={{ background: 'linear-gradient(135deg, #fde8e6 0%, #faf7f3 100%)' }}>
-          <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: '#b97070' }}>
-            My Skin Recipe
-          </p>
-          <h1 className="text-2xl font-serif font-bold text-brown-dark leading-tight mb-1">
-            {recipe.name}
-          </h1>
-          <p className="text-text-secondary text-sm">{recipe.skinDiagnosis}</p>
+    <main className="min-h-screen bg-cream animate-fadeIn">
+      {/* Sticky tab bar */}
+      <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm">
+        <div className="flex">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => switchTab(tab.id)}
+              className="flex-1 py-3.5 text-xs font-semibold transition-all duration-200"
+              style={activeTab === tab.id
+                ? { color: '#b97070', borderBottom: '2px solid #b97070' }
+                : { color: '#a8978a', borderBottom: '2px solid transparent' }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        <div className="px-5 space-y-4 mt-4">
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">내 피부 프로필</p>
-            <div className="flex flex-wrap gap-2">
-              <Tag label={`피부: ${LABEL_MAP.skinType[answers.skinType] ?? answers.skinType}`} />
-              <Tag label={`민감도: ${LABEL_MAP.sensitivity[answers.sensitivity] ?? answers.sensitivity}`} />
-              {concerns.map((c) => (
-                <Tag key={c} label={`고민: ${LABEL_MAP.concern[c] ?? c}`} />
-              ))}
-              <Tag label={`루틴: ${LABEL_MAP.routine[answers.routine] ?? answers.routine}`} />
-              <Tag label={`질감: ${LABEL_MAP.texture[answers.texture] ?? answers.texture}`} />
-            </div>
-          </div>
-
-          {activeAvoid.length > 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-2">적용된 성분 필터</p>
-              <div className="flex flex-wrap gap-2 mb-1">
-                {activeAvoid.map((a) => (
-                  <span key={a} className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
-                    ✓ {AVOID_LABEL[a] ?? a} 미포함
-                  </span>
-                ))}
-              </div>
-              {filteredOut.length > 0 && (
-                <p className="text-xs text-green-600">
-                  해당 성분이 포함된 원료 {filteredOut.length}가지를 제외했습니다.
-                </p>
-              )}
-            </div>
-          )}
-
-          {isOrganic && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-emerald-700 mb-1">🌎 천연·오가닉 성분 선호</p>
-              <p className="text-xs text-emerald-600 leading-relaxed">
-                원료 선택 시 식물 유래·자연 추출 성분을 우선하세요. 합성 방부제 대신 로즈마리 추출물 같은 천연 항산화제 사용을 권장합니다.
+      {/* Tab: 레시피 */}
+      {activeTab === 'recipe' && (
+        <>
+          <div ref={resultRef}>
+            {/* Header band */}
+            <div className="px-5 pt-8 pb-6"
+                 style={{ background: 'linear-gradient(135deg, #fde8e6 0%, #faf7f3 100%)' }}>
+              <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: '#b97070' }}>
+                My Skin Recipe
               </p>
+              <h1 className="text-2xl font-serif font-bold text-brown-dark leading-tight mb-1">
+                {recipe.name}
+              </h1>
+              <p className="text-text-secondary text-sm">{recipe.skinDiagnosis}</p>
             </div>
-          )}
 
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">피부 진단</p>
-            <p className="text-sm text-text-secondary leading-relaxed">{recipe.diagnosisDesc}</p>
-          </div>
+            <div className="px-5 space-y-4 mt-4 pb-6">
+              {/* Profile */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">내 피부 프로필</p>
+                <div className="flex flex-wrap gap-2">
+                  <Tag label={`피부: ${LABEL_MAP.skinType[answers.skinType] ?? answers.skinType}`} />
+                  <Tag label={`민감도: ${LABEL_MAP.sensitivity[answers.sensitivity] ?? answers.sensitivity}`} />
+                  {concerns.map((c) => (
+                    <Tag key={c} label={`고민: ${LABEL_MAP.concern[c] ?? c}`} />
+                  ))}
+                  <Tag label={`루틴: ${LABEL_MAP.routine[answers.routine] ?? answers.routine}`} />
+                  <Tag label={`질감: ${LABEL_MAP.texture[answers.texture] ?? answers.texture}`} />
+                </div>
+              </div>
 
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">원료 배합 레시피</p>
-              <span className="text-xs text-text-muted">{recipe.ingredients.length}가지 성분</span>
-            </div>
-            <div className="flex flex-col gap-4">
-              {recipe.ingredients.map((ing, idx) => (
-                <div key={idx} className="flex gap-3">
-                  <div className="flex-shrink-0 pt-0.5">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                         style={{ backgroundColor: '#b97070' }}>
-                      {idx + 1}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="font-semibold text-text-primary text-sm">{ing.name}</span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
-                            style={{ backgroundColor: '#c4a882' }}>
-                        {ing.ratio}
+              {/* Avoid filter */}
+              {activeAvoid.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-2">적용된 성분 필터</p>
+                  <div className="flex flex-wrap gap-2 mb-1">
+                    {activeAvoid.map((a) => (
+                      <span key={a} className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
+                        ✓ {AVOID_LABEL[a] ?? a} 미포함
                       </span>
+                    ))}
+                  </div>
+                  {filteredOut.length > 0 && (
+                    <p className="text-xs text-green-600">
+                      해당 성분이 포함된 원료 {filteredOut.length}가지를 제외했습니다.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Organic note */}
+              {isOrganic && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-emerald-700 mb-1">🌎 천연·오가닉 성분 선호</p>
+                  <p className="text-xs text-emerald-600 leading-relaxed">
+                    원료 선택 시 식물 유래·자연 추출 성분을 우선하세요. 합성 방부제 대신 로즈마리 추출물 같은 천연 항산화제 사용을 권장합니다.
+                  </p>
+                </div>
+              )}
+
+              {/* Diagnosis */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">피부 진단</p>
+                <p className="text-sm text-text-secondary leading-relaxed">{recipe.diagnosisDesc}</p>
+              </div>
+
+              {/* Ingredients */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">원료 배합 레시피</p>
+                  <span className="text-xs text-text-muted">{recipe.ingredients.length}가지 성분</span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {recipe.ingredients.map((ing, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <div className="flex-shrink-0 pt-0.5">
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                             style={{ backgroundColor: '#b97070' }}>
+                          {idx + 1}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-semibold text-text-primary text-sm">{ing.name}</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                                style={{ backgroundColor: '#c4a882' }}>
+                            {ing.ratio}
+                          </span>
+                        </div>
+                        <p className="text-text-muted text-xs leading-relaxed">{ing.benefit}</p>
+                      </div>
                     </div>
-                    <p className="text-text-muted text-xs leading-relaxed">{ing.benefit}</p>
+                  ))}
+                </div>
+                {filteredOut.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-beige">
+                    <p className="text-xs text-text-muted mb-1">회피 성분으로 제외된 원료:</p>
+                    {filteredOut.map((ing, idx) => (
+                      <p key={idx} className="text-xs text-text-muted line-through opacity-50">
+                        {ing.name} ({ing.ratio})
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Texture */}
+              <div className="bg-beige rounded-2xl p-4">
+                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">추천 제형</p>
+                <p className="text-sm font-medium text-text-primary">🧴 {recipe.textureSuggestion}</p>
+              </div>
+
+              {/* Application */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">사용 방법</p>
+                <p className="text-sm text-text-secondary leading-relaxed">{recipe.application}</p>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">케어 팁</p>
+                <div className="flex flex-col gap-2.5">
+                  {recipe.tips.map((tip, idx) => (
+                    <div key={idx} className="flex gap-2.5">
+                      <span className="text-sm flex-shrink-0 mt-0.5">💡</span>
+                      <p className="text-sm text-text-secondary leading-relaxed">{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Patch test warning */}
+              <div className="rounded-2xl p-4 border-2" style={{ borderColor: '#dfa8a8', backgroundColor: '#fde8e6' }}>
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0">⚠️</span>
+                  <div>
+                    <p className="font-semibold text-sm mb-1" style={{ color: '#8b4040' }}>패치 테스트 필수</p>
+                    <p className="text-xs leading-relaxed" style={{ color: '#a05050' }}>
+                      새로운 원료나 레시피를 사용하기 전에 팔 안쪽이나 귀 뒤에 소량 도포 후 24-48시간 반응을 확인하세요.
+                      붉음·가려움·부종 발생 시 즉시 세안하고 중단하세요.
+                    </p>
+                    <p className="text-xs mt-2 font-medium" style={{ color: '#8b4040' }}>
+                      {recipe.sensitivityNote}
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
-            {filteredOut.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-beige">
-                <p className="text-xs text-text-muted mb-1">회피 성분으로 제외된 원료:</p>
-                {filteredOut.map((ing, idx) => (
-                  <p key={idx} className="text-xs text-text-muted line-through opacity-50">
-                    {ing.name} ({ing.ratio})
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-beige rounded-2xl p-4">
-            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">추천 제형</p>
-            <p className="text-sm font-medium text-text-primary">🧴 {recipe.textureSuggestion}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">사용 방법</p>
-            <p className="text-sm text-text-secondary leading-relaxed">{recipe.application}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-4 shadow-sm">
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">케어 팁</p>
-            <div className="flex flex-col gap-2.5">
-              {recipe.tips.map((tip, idx) => (
-                <div key={idx} className="flex gap-2.5">
-                  <span className="text-sm flex-shrink-0 mt-0.5">💡</span>
-                  <p className="text-sm text-text-secondary leading-relaxed">{tip}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl p-4 border-2" style={{ borderColor: '#dfa8a8', backgroundColor: '#fde8e6' }}>
-            <div className="flex items-start gap-3">
-              <span className="text-xl flex-shrink-0">⚠️</span>
-              <div>
-                <p className="font-semibold text-sm mb-1" style={{ color: '#8b4040' }}>패치 테스트 필수</p>
-                <p className="text-xs leading-relaxed" style={{ color: '#a05050' }}>
-                  새로운 원료나 레시피를 사용하기 전에 팔 안쪽이나 귀 뒤에 소량 도포 후 24-48시간 반응을 확인하세요.
-                  붉음·가려움·부종 발생 시 즉시 세안하고 중단하세요.
-                </p>
-                <p className="text-xs mt-2 font-medium" style={{ color: '#8b4040' }}>
-                  {recipe.sensitivityNote}
-                </p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="px-5 mt-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-beige" />
-          <p className="text-xs font-semibold tracking-widest uppercase" style={{ color: '#b97070' }}>
-            DIY 초보자 가이드
-          </p>
-          <div className="flex-1 h-px bg-beige" />
-        </div>
+          {/* Action buttons */}
+          <div className="px-5 pb-12 flex flex-col gap-3">
+            <p className="text-xs text-center text-text-muted mb-1">레시피 저장 또는 공유하기</p>
 
-        <div>
-          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
-            원료별 초보자 가이드 + 구매 링크
-          </p>
-          <div className="flex flex-col gap-3">
-            {recipe.ingredients.map((ing, idx) => (
-              <IngredientDetailCard key={idx} ing={ing} idx={idx} />
-            ))}
+            <button
+              onClick={handleSaveImage}
+              disabled={isSaving}
+              className="w-full py-4 rounded-2xl font-semibold text-base text-white transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+              style={{
+                backgroundColor: '#b97070',
+                boxShadow: '0 4px 14px rgba(185,112,112,0.3)',
+                opacity: isSaving ? 0.7 : 1,
+              }}
+            >
+              {isSaving ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  저장 중...
+                </>
+              ) : (
+                '📷  이미지로 저장하기'
+              )}
+            </button>
+
+            <button
+              onClick={handleBookmark}
+              className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95 border-2"
+              style={isSaved
+                ? { borderColor: '#c4a882', color: '#c4a882', backgroundColor: '#faf7f3' }
+                : { borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
+            >
+              {isSaved ? '✅  저장됨 (탭하면 삭제)' : '⭐  내 레시피로 저장하기'}
+            </button>
+
+            {/* Kakao + Copy link row */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleKakaoShare}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5"
+                style={{ backgroundColor: '#FEE500', color: '#3C1E1E' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3C6.477 3 2 6.582 2 11.012c0 2.85 1.72 5.356 4.32 6.847l-.9 3.317c-.08.29.24.526.495.364L9.89 19.17A11.7 11.7 0 0 0 12 19.023c5.523 0 10-3.582 10-8.011S17.523 3 12 3z"/>
+                </svg>
+                카카오톡 공유
+              </button>
+              <button
+                onClick={handleCopyLink}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95 border-2"
+                style={{ borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
+              >
+                🔗  링크 복사
+              </button>
+            </div>
+
+            <button
+              onClick={() => { sessionStorage.clear(); router.push('/'); }}
+              className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95"
+              style={{ backgroundColor: '#f0e8dc', color: '#6b5040' }}
+            >
+              🔄  다시 진단하기
+            </button>
           </div>
+        </>
+      )}
+
+      {/* Tab: DIY 가이드 */}
+      {activeTab === 'diy' && (
+        <div className="px-5 pt-5 pb-12 space-y-4">
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <p className="text-xs font-semibold text-amber-800 mb-0.5">📋 {recipe.name}</p>
+            <p className="text-xs text-amber-700">각 원료를 구매해 직접 제조하는 가이드예요.</p>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+              원료별 초보자 가이드 + 구매 링크
+            </p>
+            <div className="flex flex-col gap-3">
+              {recipe.ingredients.map((ing, idx) => (
+                <IngredientDetailCard key={idx} ing={ing} idx={idx} />
+              ))}
+            </div>
+          </div>
+
+          <ManufacturingGuide ingredients={recipe.ingredients} />
+          <StorageGuide ingredients={recipe.ingredients} />
         </div>
+      )}
 
-        <CostTable ingredients={recipe.ingredients} />
-        <ManufacturingGuide ingredients={recipe.ingredients} />
-        <StorageGuide ingredients={recipe.ingredients} />
-        <KitCTA />
-      </div>
+      {/* Tab: 비용·구매 */}
+      {activeTab === 'purchase' && (
+        <div className="px-5 pt-5 pb-12 space-y-4">
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
+            <p className="text-xs font-semibold text-amber-800 mb-0.5">💰 {recipe.name} 비용 분석</p>
+            <p className="text-xs text-amber-700">30ml 기준 직접 제조 vs 시중 제품 비교예요.</p>
+          </div>
 
-      <div className="px-5 pt-6 pb-12 flex flex-col gap-3">
-        <p className="text-xs text-center text-text-muted mb-1">레시피 저장 또는 공유하기</p>
-
-        <button
-          onClick={handleSaveImage}
-          disabled={isSaving}
-          className="w-full py-4 rounded-2xl font-semibold text-base text-white transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
-          style={{
-            backgroundColor: '#b97070',
-            boxShadow: '0 4px 14px rgba(185,112,112,0.3)',
-            opacity: isSaving ? 0.7 : 1,
-          }}
-        >
-          {isSaving ? (
-            <>
-              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              저장 중...
-            </>
-          ) : (
-            '📷  이미지로 저장하기'
-          )}
-        </button>
-
-        <button
-          onClick={handleBookmark}
-          className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95 border-2"
-          style={isSaved
-            ? { borderColor: '#c4a882', color: '#c4a882', backgroundColor: '#faf7f3' }
-            : { borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
-        >
-          {isSaved ? '✅  저장됨 (탭하면 삭제)' : '⭐  내 레시피로 저장하기'}
-        </button>
-
-        <button
-          onClick={handleCopyLink}
-          className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95 border-2"
-          style={{ borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
-        >
-          🔗  링크 복사하기
-        </button>
-
-        <button
-          onClick={() => { sessionStorage.clear(); router.push('/'); }}
-          className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95"
-          style={{ backgroundColor: '#f0e8dc', color: '#6b5040' }}
-        >
-          🔄  다시 진단하기
-        </button>
-      </div>
+          <CostTable ingredients={recipe.ingredients} />
+          <KitCTA />
+        </div>
+      )}
 
       <Toast visible={toastVisible} />
     </main>
