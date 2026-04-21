@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { track } from '@vercel/analytics';
 
 const STEPS = [
   { label: '피부 타입 분석 중', delay: 600 },
@@ -55,6 +56,9 @@ export default function AnalysisPage() {
           'skinRecipeResult',
           JSON.stringify({ recipe: data.recipe, filteredOut: data.filteredOut, answers })
         );
+        // 재방문 시 설문 복원을 위해 localStorage에도 저장
+        try { localStorage.setItem('lastSurveyAnswers', JSON.stringify(answers)); } catch { /* ignore */ }
+        track('survey_complete', { skinType: answers.skinType, concern: String(answers.concern) });
         // TextEncoder로 유니코드(한글) 안전하게 base64 인코딩
         const bytes = new TextEncoder().encode(JSON.stringify(answers));
         const encoded = btoa(String.fromCharCode(...bytes));

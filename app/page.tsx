@@ -9,6 +9,55 @@ interface SavedRecipe {
   savedAt: string;
 }
 
+interface LastViewedRecipe {
+  url: string;
+  name: string;
+  diagnosis: string;
+  ingredientCount: number;
+  viewedAt: string;
+}
+
+function LastViewed() {
+  const [last, setLast] = useState<LastViewedRecipe | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('lastViewedRecipe');
+      if (raw) setLast(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+
+  if (!last) return null;
+
+  const viewedDate = new Date(last.viewedAt);
+  const diffH = Math.floor((Date.now() - viewedDate.getTime()) / 3600000);
+  const timeLabel = diffH < 1 ? '방금 전' : diffH < 24 ? `${diffH}시간 전` : `${Math.floor(diffH / 24)}일 전`;
+
+  return (
+    <div className="mb-4">
+      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">이전 레시피 결과</p>
+      <a
+        href={last.url}
+        className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm active:bg-rose-50 transition-colors"
+      >
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+             style={{ backgroundColor: '#fde8e6' }}>
+          🌸
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-text-primary text-sm truncate">{last.name}</p>
+          <p className="text-text-muted text-xs truncate">{last.diagnosis}</p>
+          <p className="text-xs mt-0.5" style={{ color: '#c4a882' }}>성분 {last.ingredientCount}가지 · {timeLabel}</p>
+        </div>
+        <span className="text-xs font-semibold flex-shrink-0 px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
+          다시 보기
+        </span>
+      </a>
+    </div>
+  );
+}
+
 function FeatureItem({ icon, title, desc }: { icon: string; title: string; desc: string }) {
   return (
     <div className="flex items-start gap-4 p-4 bg-white rounded-2xl shadow-sm">
@@ -154,7 +203,8 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      {/* Saved recipes */}
+      {/* Last viewed + Saved recipes */}
+      <LastViewed />
       <SavedRecipes />
 
       {/* Features */}

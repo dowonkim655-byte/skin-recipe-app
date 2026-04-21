@@ -123,6 +123,7 @@ export default function SurveyPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [selected, setSelected] = useState<AnswerValue | null>(null);
+  const [showRestore, setShowRestore] = useState(false);
   const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const question = QUESTIONS[currentStep];
@@ -134,10 +135,29 @@ export default function SurveyPage() {
   const selectedCount = selectedArr.filter((v) => v !== '없음').length;
   const maxReached = !!maxSelect && selectedCount >= maxSelect;
 
+  // 이전 답변 복원 여부 확인
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('lastSurveyAnswers');
+      if (raw) setShowRestore(true);
+    } catch { /* ignore */ }
+  }, []);
+
   // 단계 이동 시 타이머 정리
   useEffect(() => {
     return () => { if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current); };
   }, [currentStep]);
+
+  function handleRestoreAnswers() {
+    try {
+      const raw = localStorage.getItem('lastSurveyAnswers');
+      if (!raw) return;
+      const prev = JSON.parse(raw) as Record<string, AnswerValue>;
+      setAnswers(prev);
+      sessionStorage.setItem('skinSurveyAnswers', raw);
+      router.push('/analysis');
+    } catch { /* ignore */ }
+  }
 
   function handleSelect(value: string) {
     if (isMulti) {
@@ -209,6 +229,24 @@ export default function SurveyPage() {
 
   return (
     <main className="min-h-screen bg-cream flex flex-col px-5 py-6 animate-fadeIn">
+      {/* 이전 답변 복원 배너 */}
+      {showRestore && currentStep === 0 && (
+        <div className="mb-4 bg-rose-50 border border-rose-100 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-xl flex-shrink-0">🌸</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-text-primary">이전 레시피가 있어요</p>
+            <p className="text-xs text-text-muted">이전 답변으로 바로 레시피 확인</p>
+          </div>
+          <button
+            onClick={handleRestoreAnswers}
+            className="flex-shrink-0 text-xs font-semibold px-3 py-2 rounded-xl text-white active:scale-95 transition-all"
+            style={{ backgroundColor: '#b97070' }}
+          >
+            바로 보기
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button

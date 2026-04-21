@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { track } from '@vercel/analytics';
 import type { RecipeEntry, SurveyAnswers, Ingredient } from '@/types';
 import IngredientModal from './IngredientModal';
 import {
@@ -440,15 +441,25 @@ export default function ResultClient() {
   }, [router]);
 
   useEffect(() => {
-    if (!recipe) return;
+    if (!recipe || !answers) return;
     try {
       const saved: SavedRecipe[] = JSON.parse(localStorage.getItem('savedRecipes') ?? '[]');
       setIsSaved(saved.some((r) => r.url === window.location.href));
       const key = `rating_${recipe.name}`;
       const prev = localStorage.getItem(key);
       if (prev) { setRating(Number(prev)); setRatingDone(true); }
+      // 마지막 본 레시피 자동저장 (재방문 UX)
+      localStorage.setItem('lastViewedRecipe', JSON.stringify({
+        url: window.location.href,
+        name: recipe.name,
+        diagnosis: recipe.skinDiagnosis,
+        ingredientCount: recipe.ingredients.length,
+        viewedAt: new Date().toISOString(),
+      }));
     } catch { /* ignore */ }
-  }, [recipe]);
+    // Analytics: 레시피 조회 이벤트
+    track('recipe_view', { skinType: answers.skinType });
+  }, [recipe, answers]);
 
   if (!recipe || !answers) return (
     <main className="min-h-screen bg-cream flex items-center justify-center">
@@ -467,6 +478,7 @@ export default function ResultClient() {
     setRating(star);
     setRatingDone(true);
     try { localStorage.setItem(`rating_${recipe!.name}`, String(star)); } catch { /* ignore */ }
+    track('rating_submit', { rating: star });
     setRatingToast(true);
     setTimeout(() => setRatingToast(false), 2500);
   }
@@ -564,6 +576,7 @@ export default function ResultClient() {
       alert('카카오 SDK가 아직 로드되지 않았어요. 잠시 후 다시 시도해주세요.');
       return;
     }
+    track('share_kakao');
     window.Kakao.Share.sendDefault({
       objectType: 'feed',
       content: {
@@ -596,6 +609,7 @@ export default function ResultClient() {
       document.execCommand('copy');
       document.body.removeChild(el);
     }
+    track('share_copy');
     setToastVisible(true);
     setTimeout(() => setToastVisible(false), 2000);
   }
