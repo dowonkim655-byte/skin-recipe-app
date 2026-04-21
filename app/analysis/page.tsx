@@ -49,7 +49,8 @@ export default function AnalysisPage() {
           'skinRecipeResult',
           JSON.stringify({ recipe: data.recipe, filteredOut: data.filteredOut, answers })
         );
-        const encoded = encodeURIComponent(btoa(JSON.stringify(answers)));
+        // btoa는 ASCII 전용 - 한글 포함 시 unescape/encodeURIComponent로 래핑
+        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(answers))));
         router.push(`/result?d=${encoded}`);
       })
       .catch(() => {

@@ -391,7 +391,7 @@ export default function ResultClient() {
     const encoded = params.get('d');
     if (encoded) {
       try {
-        const decodedAnswers = JSON.parse(atob(decodeURIComponent(encoded)));
+        const decodedAnswers = JSON.parse(decodeURIComponent(escape(atob(encoded))));
         setAnswers(decodedAnswers);
         fetch('/api/recommend', {
           method: 'POST',
