@@ -163,9 +163,9 @@ export default function MyRecipesPage() {
                   </button>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {history.map((entry, idx) => (
+                  {history.map((entry) => (
                     <a
-                      key={entry.url + idx}
+                      key={entry.url}
                       href={entry.url}
                       className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm active:bg-rose-50 transition-colors"
                     >

@@ -333,15 +333,15 @@ export function analyzeCompatibility(ingredients: Ingredient[]): CompatibilityRe
   const conflicts: CompatibilityResult['conflicts'] = [];
   const synergies: CompatibilityResult['synergies'] = [];
 
-  // 충돌 검사
+  // 충돌 검사 - incompatibleWith 문자열에 레시피 성분명이 명시적으로 포함될 때만 매칭
   for (const ing of ingredients) {
     const korName = ing.name.split(' (')[0];
     const meta = getIngredientMeta(ing.name);
     if (!meta?.incompatibleWith) continue;
     for (const conflict of meta.incompatibleWith) {
-      // conflict는 설명 문자열 - 레시피 성분명과 키워드 매칭
+      // 레시피 내 다른 성분 중 conflict 문자열에 이름 전체가 포함된 것만 매칭
       const matchedName = names.find(
-        (n) => n !== korName && conflict.includes(n.slice(0, 4))
+        (n) => n !== korName && (conflict.includes(n) || n.split('').length >= 3 && conflict.includes(n.slice(0, Math.min(n.length, 5))))
       );
       if (matchedName) {
         const alreadyAdded = conflicts.some(
@@ -354,10 +354,10 @@ export function analyzeCompatibility(ingredients: Ingredient[]): CompatibilityRe
     }
   }
 
-  // 시너지 검사
+  // 시너지 검사 - 정확한 성분명 포함 여부만 체크 (최소 3자 이상)
   for (const pair of SYNERGY_PAIRS) {
-    const hasA = names.some((n) => n.includes(pair.a) || pair.a.includes(n));
-    const hasB = names.some((n) => n.includes(pair.b) || pair.b.includes(n));
+    const hasA = names.some((n) => n === pair.a || (pair.a.length >= 3 && n.includes(pair.a)) || (n.length >= 3 && pair.a.includes(n)));
+    const hasB = names.some((n) => n === pair.b || (pair.b.length >= 3 && n.includes(pair.b)) || (n.length >= 3 && pair.b.includes(n)));
     if (hasA && hasB) {
       synergies.push(pair);
     }
