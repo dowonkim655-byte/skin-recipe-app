@@ -402,6 +402,7 @@ export default function ResultClient() {
   const [viralBannerDismissed, setViralBannerDismissed] = useState(false);
   const [batchSize, setBatchSize] = useState(30);
   const [purchasedIngs, setPurchasedIngs] = useState<Set<string>>(new Set());
+  const [usageStartDate, setUsageStartDate] = useState<string | null>(null);
 
   // 신규 유저 감지 (공유 링크로 들어온 경우)
   useEffect(() => {
@@ -501,6 +502,11 @@ export default function ResultClient() {
       const raw = localStorage.getItem(`purchased_${recipe.id}`);
       if (raw) setPurchasedIngs(new Set(JSON.parse(raw) as string[]));
     } catch { /* ignore */ }
+    // 사용 시작일 복원
+    try {
+      const start = localStorage.getItem(`usage_start_${recipe.id}`);
+      if (start) setUsageStartDate(start);
+    } catch { /* ignore */ }
   }, [recipe, answers]);
 
   if (!recipe || !answers) return (
@@ -528,6 +534,24 @@ export default function ResultClient() {
   function switchTab(tab: Tab) {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function daysSince(isoDate: string): number {
+    return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000);
+  }
+
+  function startUsage() {
+    if (!recipe) return;
+    const today = new Date().toISOString().slice(0, 10);
+    setUsageStartDate(today);
+    try { localStorage.setItem(`usage_start_${recipe.id}`, today); } catch { /* ignore */ }
+    track('usage_start', { recipeId: recipe.id });
+  }
+
+  function stopUsage() {
+    if (!recipe) return;
+    setUsageStartDate(null);
+    try { localStorage.removeItem(`usage_start_${recipe.id}`); } catch { /* ignore */ }
   }
 
   function togglePurchased(ingName: string) {
@@ -913,6 +937,106 @@ export default function ResultClient() {
                   ))}
                 </div>
               </div>
+
+              {/* 사용 시작 트래킹 */}
+              {usageStartDate ? (() => {
+                const days = daysSince(usageStartDate);
+                const milestones = [
+                  { d: 3, label: '3일', emoji: '🌱', msg: '피부가 적응 중이에요. 자극이 없다면 계속 사용하세요.' },
+                  { d: 7, label: '1주', emoji: '✨', msg: '1주일이 됐어요! 보습감·피부결 변화를 느끼기 시작할 시점이에요.' },
+                  { d: 14, label: '2주', emoji: '🌸', msg: '2주 경과! 대부분의 활성 성분이 효과를 나타내기 시작해요.' },
+                  { d: 30, label: '1개월', emoji: '🎉', msg: '한 달 달성! 피부 사이클 한 번이 완전히 돌았어요.' },
+                ];
+                const reached = milestones.filter((m) => days >= m.d);
+                const next = milestones.find((m) => days < m.d);
+                const current = reached[reached.length - 1];
+                return (
+                  <div className="rounded-2xl overflow-hidden border" style={{ borderColor: '#d1fae5' }}>
+                    {/* 헤더 */}
+                    <div className="px-4 pt-4 pb-3" style={{ backgroundColor: '#f0fdf4' }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-sm font-bold" style={{ color: '#15803d' }}>
+                          {current ? current.emoji : '🌱'} 사용 {days}일째
+                        </p>
+                        <button
+                          onClick={stopUsage}
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ color: '#6b7280', backgroundColor: '#e5e7eb' }}
+                        >
+                          중단
+                        </button>
+                      </div>
+                      <p className="text-xs" style={{ color: '#166534' }}>
+                        {new Date(usageStartDate).toLocaleDateString('ko-KR')}부터 사용 중
+                      </p>
+                    </div>
+                    {/* 마일스톤 바 */}
+                    <div className="px-4 py-3 bg-white">
+                      <div className="flex items-center gap-1 mb-2">
+                        {milestones.map((m, i) => (
+                          <div key={m.d} className="flex items-center flex-1">
+                            <div
+                              className="flex-1 h-1.5 rounded-full"
+                              style={{ backgroundColor: days >= m.d ? '#22c55e' : '#e5e7eb' }}
+                            />
+                            <div
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0"
+                              style={{
+                                backgroundColor: days >= m.d ? '#22c55e' : '#f3f4f6',
+                                color: days >= m.d ? 'white' : '#9ca3af',
+                              }}
+                            >
+                              {days >= m.d ? '✓' : i + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex justify-between">
+                        {milestones.map((m) => (
+                          <span key={m.d} className="text-xs" style={{ color: days >= m.d ? '#15803d' : '#9ca3af' }}>
+                            {m.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 현재 메시지 */}
+                    {current && (
+                      <div className="px-4 pb-3 bg-white">
+                        <p className="text-xs leading-relaxed" style={{ color: '#374151' }}>{current.msg}</p>
+                      </div>
+                    )}
+                    {/* 2주+ 재진단 CTA */}
+                    {days >= 14 && (
+                      <div className="px-4 pb-4 bg-white border-t border-stone-50 pt-3">
+                        <p className="text-xs text-text-muted mb-2">피부 변화에 맞게 레시피를 업데이트해보세요.</p>
+                        <button
+                          onClick={() => router.push('/survey')}
+                          className="w-full py-2.5 rounded-xl text-xs font-bold active:scale-95 transition-all text-white"
+                          style={{ backgroundColor: '#b97070' }}
+                        >
+                          🔄 새 레시피로 업데이트하기
+                        </button>
+                      </div>
+                    )}
+                    {/* 다음 목표 */}
+                    {next && (
+                      <div className="px-4 pb-4 bg-white">
+                        <p className="text-xs" style={{ color: '#9ca3af' }}>
+                          다음 목표: {next.label}까지 {next.d - days}일 남았어요
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })() : (
+                <button
+                  onClick={startUsage}
+                  className="w-full py-3 rounded-2xl text-sm font-semibold border-2 transition-all active:scale-95"
+                  style={{ borderColor: '#22c55e', color: '#15803d', backgroundColor: '#f0fdf4' }}
+                >
+                  🌱 이 레시피 사용 시작하기
+                </button>
+              )}
 
               {/* Patch test warning */}
               <div className="rounded-2xl p-4 border-2" style={{ borderColor: '#dfa8a8', backgroundColor: '#fde8e6' }}>
