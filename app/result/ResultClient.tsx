@@ -486,14 +486,19 @@ export default function ResultClient() {
       const key = `rating_${recipe.name}`;
       const prev = localStorage.getItem(key);
       if (prev) { setRating(Number(prev)); setRatingDone(true); }
-      // 마지막 본 레시피 자동저장 (재방문 UX)
-      localStorage.setItem('lastViewedRecipe', JSON.stringify({
+      // 레시피 히스토리 저장 (최대 5개, 중복 URL 제거)
+      const entry = {
         url: window.location.href,
         name: recipe.name,
         diagnosis: recipe.skinDiagnosis,
         ingredientCount: recipe.ingredients.length,
         viewedAt: new Date().toISOString(),
-      }));
+      };
+      const existing: Array<typeof entry> = JSON.parse(localStorage.getItem('recipeHistory') ?? '[]');
+      const deduped = existing.filter((r) => r.url !== entry.url);
+      localStorage.setItem('recipeHistory', JSON.stringify([entry, ...deduped].slice(0, 5)));
+      // 하위 호환 유지
+      localStorage.setItem('lastViewedRecipe', JSON.stringify(entry));
     } catch { /* ignore */ }
     // Analytics: 레시피 조회 이벤트
     track('recipe_view', { skinType: answers.skinType });

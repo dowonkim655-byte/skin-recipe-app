@@ -9,7 +9,7 @@ interface SavedRecipe {
   savedAt: string;
 }
 
-interface LastViewedRecipe {
+interface HistoryEntry {
   url: string;
   name: string;
   diagnosis: string;
@@ -17,43 +17,80 @@ interface LastViewedRecipe {
   viewedAt: string;
 }
 
+function timeAgo(isoDate: string): string {
+  const diffH = Math.floor((Date.now() - new Date(isoDate).getTime()) / 3600000);
+  if (diffH < 1) return '방금 전';
+  if (diffH < 24) return `${diffH}시간 전`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD}일 전`;
+  return `${Math.floor(diffD / 7)}주 전`;
+}
+
 function LastViewed() {
-  const [last, setLast] = useState<LastViewedRecipe | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('lastViewedRecipe');
-      if (raw) setLast(JSON.parse(raw));
+      // recipeHistory 우선, 없으면 lastViewedRecipe 하위 호환
+      const raw = localStorage.getItem('recipeHistory');
+      if (raw) {
+        setHistory(JSON.parse(raw));
+      } else {
+        const legacy = localStorage.getItem('lastViewedRecipe');
+        if (legacy) setHistory([JSON.parse(legacy)]);
+      }
     } catch { /* ignore */ }
   }, []);
 
-  if (!last) return null;
+  if (history.length === 0) return null;
 
-  const viewedDate = new Date(last.viewedAt);
-  const diffH = Math.floor((Date.now() - viewedDate.getTime()) / 3600000);
-  const timeLabel = diffH < 1 ? '방금 전' : diffH < 24 ? `${diffH}시간 전` : `${Math.floor(diffH / 24)}일 전`;
+  const PREVIEW = 2;
+  const visible = showAll ? history : history.slice(0, PREVIEW);
 
   return (
     <div className="mb-4">
-      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">이전 레시피 결과</p>
-      <a
-        href={last.url}
-        className="flex items-center gap-3 bg-white rounded-2xl p-4 shadow-sm active:bg-rose-50 transition-colors"
-      >
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
-             style={{ backgroundColor: '#fde8e6' }}>
-          🌸
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-text-primary text-sm truncate">{last.name}</p>
-          <p className="text-text-muted text-xs truncate">{last.diagnosis}</p>
-          <p className="text-xs mt-0.5" style={{ color: '#c4a882' }}>성분 {last.ingredientCount}가지 · {timeLabel}</p>
-        </div>
-        <span className="text-xs font-semibold flex-shrink-0 px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
-          다시 보기
-        </span>
-      </a>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+          최근 레시피 기록
+        </p>
+        <span className="text-xs text-text-muted">{history.length}개</span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {visible.map((entry, idx) => (
+          <a
+            key={entry.url + idx}
+            href={entry.url}
+            className="flex items-center gap-3 bg-white rounded-2xl p-3.5 shadow-sm active:bg-rose-50 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                 style={{ backgroundColor: '#fde8e6' }}>
+              🌸
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-text-primary text-sm truncate">{entry.name}</p>
+              <p className="text-text-muted text-xs truncate">{entry.diagnosis}</p>
+              <p className="text-xs mt-0.5" style={{ color: '#c4a882' }}>
+                성분 {entry.ingredientCount}가지 · {timeAgo(entry.viewedAt)}
+              </p>
+            </div>
+            <span className="text-xs font-semibold flex-shrink-0 px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
+              보기
+            </span>
+          </a>
+        ))}
+      </div>
+
+      {history.length > PREVIEW && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full mt-2 py-2 text-xs font-semibold text-text-muted active:text-text-primary transition-colors"
+        >
+          {showAll ? '접기 ▲' : `${history.length - PREVIEW}개 더 보기 ▼`}
+        </button>
+      )}
     </div>
   );
 }
