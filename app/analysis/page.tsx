@@ -49,12 +49,13 @@ export default function AnalysisPage() {
           'skinRecipeResult',
           JSON.stringify({ recipe: data.recipe, filteredOut: data.filteredOut, answers })
         );
-        // btoa는 ASCII 전용 - 한글 포함 시 unescape/encodeURIComponent로 래핑
-        const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(answers))));
+        // TextEncoder로 유니코드(한글) 안전하게 base64 인코딩
+        const bytes = new TextEncoder().encode(JSON.stringify(answers));
+        const encoded = btoa(String.fromCharCode(...bytes));
         router.push(`/result?d=${encoded}`);
       })
       .catch(() => {
-        router.push('/result');
+        router.push('/?error=1');  // 에러 시 홈으로 (재시도 유도)
       });
   }, [router]);
 

@@ -10,7 +10,8 @@ interface Props {
 
 function decodeAnswers(encoded: string): SurveyAnswers | null {
   try {
-    return JSON.parse(decodeURIComponent(escape(atob(encoded)))) as SurveyAnswers;
+    const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes)) as SurveyAnswers;
   } catch {
     return null;
   }

@@ -391,7 +391,9 @@ export default function ResultClient() {
     const encoded = params.get('d');
     if (encoded) {
       try {
-        const decodedAnswers = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+        // unescape/escape deprecated → TextDecoder 방식
+        const bytes = Uint8Array.from(atob(encoded), (c) => c.charCodeAt(0));
+        const decodedAnswers = JSON.parse(new TextDecoder().decode(bytes));
         setAnswers(decodedAnswers);
         fetch('/api/recommend', {
           method: 'POST',
@@ -402,16 +404,21 @@ export default function ResultClient() {
           .then((data) => {
             setRecipe(data.recipe);
             setFilteredOut(data.filteredOut ?? []);
-          });
+          })
+          .catch(() => router.replace('/'));  // API 실패 시 홈으로
         return;
-      } catch { /* fall through */ }
+      } catch { /* fall through to sessionStorage */ }
     }
-    const raw = sessionStorage.getItem('skinRecipeResult');
-    if (!raw) { router.replace('/'); return; }
-    const data = JSON.parse(raw);
-    setRecipe(data.recipe);
-    setAnswers(data.answers);
-    setFilteredOut(data.filteredOut ?? []);
+    try {
+      const raw = sessionStorage.getItem('skinRecipeResult');
+      if (!raw) { router.replace('/'); return; }
+      const data = JSON.parse(raw);
+      setRecipe(data.recipe);
+      setAnswers(data.answers);
+      setFilteredOut(data.filteredOut ?? []);
+    } catch {
+      router.replace('/');
+    }
   }, [router]);
 
   useEffect(() => {
@@ -476,12 +483,15 @@ export default function ResultClient() {
         const dataUrl = canvas.toDataURL('image/png');
         const w = window.open();
         if (w) {
-          w.document.write(
-            `<html><body style="margin:0;background:#faf7f3;text-align:center;padding:16px">` +
-            `<p style="font-size:13px;color:#8b7060;margin-bottom:12px">이미지를 길게 눌러 사진 앱에 저장하세요</p>` +
-            `<img src="${dataUrl}" style="max-width:100%;border-radius:16px" />` +
-            `</body></html>`
-          );
+          const img = w.document.createElement('img');
+          img.src = dataUrl;
+          img.style.cssText = 'max-width:100%;border-radius:16px;display:block;margin:0 auto';
+          const msg = w.document.createElement('p');
+          msg.textContent = '이미지를 길게 눌러 사진 앱에 저장하세요';
+          msg.style.cssText = 'font-size:13px;color:#8b7060;text-align:center;padding:16px 0';
+          w.document.body.style.cssText = 'margin:0;background:#faf7f3;padding:16px';
+          w.document.body.appendChild(msg);
+          w.document.body.appendChild(img);
         }
         return;
       }
