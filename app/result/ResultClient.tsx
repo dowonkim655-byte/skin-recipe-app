@@ -2,6 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RecipeEntry, SurveyAnswers, Ingredient } from '@/types';
+import {
+  getIngredientMeta,
+  calcAmountG,
+  calcIngredientCost,
+  getShelfLife,
+  hasOilIngredients,
+} from '@/lib/ingredientMeta';
 
 declare global {
   interface Window {
@@ -16,14 +23,6 @@ interface SavedRecipe {
   diagnosis: string;
   savedAt: string;
 }
-
-import {
-  getIngredientMeta,
-  calcAmountG,
-  calcIngredientCost,
-  getShelfLife,
-  hasOilIngredients,
-} from '@/lib/ingredientMeta';
 
 const LABEL_MAP: Record<string, Record<string, string>> = {
   skinType: {

@@ -24,7 +24,13 @@ export default function AnalysisPage() {
       return;
     }
 
-    const answers = JSON.parse(answersRaw);
+    let answers;
+    try {
+      answers = JSON.parse(answersRaw);
+    } catch {
+      router.replace('/survey');
+      return;
+    }
 
     // Step animation timers
     STEPS.forEach((step, index) => {

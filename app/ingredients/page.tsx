@@ -368,7 +368,7 @@ export default function IngredientsPage() {
       ing.englishName.toLowerCase().includes(query.toLowerCase()) ||
       ing.desc.includes(query) ||
       ing.effect.includes(query);
-    const matchCat = category === '전체' || ing.category.includes(category.replace('/', ''));
+    const matchCat = category === '전체' || ing.category.includes(category);
     return matchQuery && matchCat;
   });
 
