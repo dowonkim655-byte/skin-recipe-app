@@ -379,9 +379,13 @@ export default function ResultClient() {
   // PWA install prompt capture
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    const installedHandler = () => { setPwaInstalled(true); setDeferredPrompt(null); };
     window.addEventListener('beforeinstallprompt', handler);
-    window.addEventListener('appinstalled', () => { setPwaInstalled(true); setDeferredPrompt(null); });
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', installedHandler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
+    };
   }, []);
 
   // Load Kakao SDK

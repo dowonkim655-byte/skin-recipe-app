@@ -226,6 +226,6 @@ export function getShelfLife(ingredients: Ingredient[]): { days: number; reason:
 export function hasOilIngredients(ingredients: Ingredient[]): boolean {
   return ingredients.some((i) =>
     i.name.includes('스쿠알란') || i.name.includes('비타민 E') || i.name.includes('토코페롤') ||
-    i.name.includes('레티놀') || i.name.includes('오일')
+    i.name.includes('레티놀') || i.name.includes('코엔자임') || i.name.includes('오일')
   );
 }

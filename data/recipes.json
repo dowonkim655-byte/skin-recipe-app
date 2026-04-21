@@ -1539,7 +1539,8 @@
         {
           "name": "진주 추출물 (Pearl Extract)",
           "ratio": "1%",
-          "benefit": "자연스러운 피부 광채 부여, 칙칙한 피부에 생기 복원"
+          "benefit": "자연스러운 피부 광채 부여, 칙칙한 피부에 생기 복원",
+          "avoidTags": ["비건"]
         }
       ],
       "textureSuggestion": "리치 세럼 또는 페이스 오일 타입",
