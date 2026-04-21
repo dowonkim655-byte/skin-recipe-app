@@ -142,7 +142,7 @@ export default function OnboardingPage() {
         {/* Stats */}
         <div className="flex justify-center gap-4">
           {[
-            { value: '24+', label: '맞춤 레시피' },
+            { value: '29+', label: '맞춤 레시피' },
             { value: '30+', label: '검증된 성분' },
             { value: '무료', label: '완전 무료' },
           ].map((s) => (
