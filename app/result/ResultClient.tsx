@@ -96,7 +96,11 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function IngredientDetailCard({ ing, idx }: { ing: Ingredient; idx: number }) {
+function IngredientDetailCard({
+  ing, idx, purchased, onToggle,
+}: {
+  ing: Ingredient; idx: number; purchased: boolean; onToggle: () => void;
+}) {
   const meta = getIngredientMeta(ing.name);
   const amountG = calcAmountG(ing.ratio);
   const cost = meta ? calcIngredientCost(ing.ratio, meta.pricePerGram) : null;
@@ -111,64 +115,82 @@ function IngredientDetailCard({ ing, idx }: { ing: Ingredient; idx: number }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-100">
+    <div
+      className="bg-white rounded-2xl p-4 shadow-sm border transition-all duration-200"
+      style={{ borderColor: purchased ? '#86efac' : '#f0ebe5', opacity: purchased ? 0.82 : 1 }}
+    >
       <div className="flex items-start gap-3 mb-3">
-        <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-             style={{ backgroundColor: '#b97070' }}>
-          {idx + 1}
-        </div>
+        <button
+          onClick={onToggle}
+          className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all duration-200 active:scale-90"
+          style={{ backgroundColor: purchased ? '#22c55e' : '#b97070' }}
+          aria-label={purchased ? '구입 완료 취소' : '구입 완료 체크'}
+        >
+          {purchased ? '✓' : idx + 1}
+        </button>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-text-primary text-sm">{ing.name}</span>
+            <span className={`font-semibold text-sm ${purchased ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+              {ing.name}
+            </span>
             <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                   style={{ backgroundColor: '#c4a882' }}>
               {ing.ratio}
             </span>
+            {purchased && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                구입 완료
+              </span>
+            )}
           </div>
-          {meta && (
+          {meta && !purchased && (
             <p className="text-xs text-text-muted mt-1 leading-relaxed">{meta.beginnerDesc}</p>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 mb-3 flex-wrap">
-        <div className="bg-stone-50 rounded-xl px-3 py-2 flex-1 min-w-0">
-          <p className="text-xs text-text-muted mb-0.5">30ml 기준 필요량</p>
-          <p className="text-sm font-semibold text-text-primary">{amountG}g</p>
-        </div>
-        {cost !== null && (
-          <div className="bg-rose-50 rounded-xl px-3 py-2 flex-1 min-w-0">
-            <p className="text-xs text-text-muted mb-0.5">예상 원가</p>
-            <p className="text-sm font-semibold" style={{ color: '#b97070' }}>
-              약 {cost.toLocaleString()}원
-            </p>
+      {!purchased && (
+        <>
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <div className="bg-stone-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+              <p className="text-xs text-text-muted mb-0.5">30ml 기준 필요량</p>
+              <p className="text-sm font-semibold text-text-primary">{amountG}g</p>
+            </div>
+            {cost !== null && (
+              <div className="bg-rose-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+                <p className="text-xs text-text-muted mb-0.5">예상 원가</p>
+                <p className="text-sm font-semibold" style={{ color: '#b97070' }}>
+                  약 {cost.toLocaleString()}원
+                </p>
+              </div>
+            )}
+            {meta && (
+              <div className="bg-amber-50 rounded-xl px-3 py-2 flex-1 min-w-0">
+                <p className="text-xs text-text-muted mb-0.5">시중 구매가</p>
+                <p className="text-xs font-medium text-amber-700">{meta.priceRange}</p>
+              </div>
+            )}
           </div>
-        )}
-        {meta && (
-          <div className="bg-amber-50 rounded-xl px-3 py-2 flex-1 min-w-0">
-            <p className="text-xs text-text-muted mb-0.5">시중 구매가</p>
-            <p className="text-xs font-medium text-amber-700">{meta.priceRange}</p>
-          </div>
-        )}
-      </div>
 
-      {meta && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => openSearch('coupang')}
-            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
-            style={{ backgroundColor: '#e5401b' }}
-          >
-            쿠팡에서 찾기
-          </button>
-          <button
-            onClick={() => openSearch('naver')}
-            className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
-            style={{ backgroundColor: '#03c75a' }}
-          >
-            네이버 쇼핑
-          </button>
-        </div>
+          {meta && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => openSearch('coupang')}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
+                style={{ backgroundColor: '#e5401b' }}
+              >
+                쿠팡에서 찾기
+              </button>
+              <button
+                onClick={() => openSearch('naver')}
+                className="flex-1 py-2 rounded-xl text-xs font-semibold text-white transition-all active:scale-95"
+                style={{ backgroundColor: '#03c75a' }}
+              >
+                네이버 쇼핑
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -379,6 +401,7 @@ export default function ResultClient() {
   const [isNewVisitor, setIsNewVisitor] = useState(false);
   const [viralBannerDismissed, setViralBannerDismissed] = useState(false);
   const [batchSize, setBatchSize] = useState(30);
+  const [purchasedIngs, setPurchasedIngs] = useState<Set<string>>(new Set());
 
   // 신규 유저 감지 (공유 링크로 들어온 경우)
   useEffect(() => {
@@ -414,6 +437,9 @@ export default function ResultClient() {
       }
     };
     document.head.appendChild(script);
+    return () => {
+      if (document.head.contains(script)) document.head.removeChild(script);
+    };
   }, []);
 
   useEffect(() => {
@@ -470,6 +496,11 @@ export default function ResultClient() {
     } catch { /* ignore */ }
     // Analytics: 레시피 조회 이벤트
     track('recipe_view', { skinType: answers.skinType });
+    // 구입 체크리스트 복원
+    try {
+      const raw = localStorage.getItem(`purchased_${recipe.id}`);
+      if (raw) setPurchasedIngs(new Set(JSON.parse(raw) as string[]));
+    } catch { /* ignore */ }
   }, [recipe, answers]);
 
   if (!recipe || !answers) return (
@@ -499,13 +530,25 @@ export default function ResultClient() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function togglePurchased(ingName: string) {
+    if (!recipe) return;
+    setPurchasedIngs((prev) => {
+      const next = new Set(prev);
+      if (next.has(ingName)) next.delete(ingName); else next.add(ingName);
+      try { localStorage.setItem(`purchased_${recipe.id}`, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
   function parseRatio(ratio: string): number {
     return parseFloat(ratio.replace('%', '')) / 100;
   }
 
   function calcGrams(ratio: string): string {
     const g = parseRatio(ratio) * batchSize;
-    return g < 0.1 ? g.toFixed(3) : g.toFixed(2);
+    if (g < 0.01) return `${g.toFixed(4)}g ⚠️`;  // 정밀 저울 필요
+    if (g < 0.1) return `${g.toFixed(3)}g`;
+    return `${g.toFixed(2)}g`;
   }
 
   async function handleSaveImage() {
@@ -564,7 +607,7 @@ export default function ResultClient() {
       link.download = fileName;
       link.href = url;
       link.click();
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } finally {
       setIsSaving(false);
     }
@@ -1013,28 +1056,66 @@ export default function ResultClient() {
       )}
 
       {/* Tab: DIY 가이드 */}
-      {activeTab === 'diy' && (
-        <div className="px-5 pt-5 pb-12 space-y-4">
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-amber-800 mb-0.5">📋 {recipe.name}</p>
-            <p className="text-xs text-amber-700">각 원료를 구매해 직접 제조하는 가이드예요.</p>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
-              원료별 초보자 가이드 + 구매 링크
-            </p>
-            <div className="flex flex-col gap-3">
-              {recipe.ingredients.map((ing, idx) => (
-                <IngredientDetailCard key={idx} ing={ing} idx={idx} />
-              ))}
+      {activeTab === 'diy' && (() => {
+        const total = recipe.ingredients.length;
+        const done = recipe.ingredients.filter((i) => purchasedIngs.has(i.name)).length;
+        const allDone = done === total;
+        return (
+          <div className="px-5 pt-5 pb-12 space-y-4">
+            {/* 구입 진행률 카드 */}
+            <div
+              className="rounded-2xl p-4 border"
+              style={allDone
+                ? { backgroundColor: '#f0fdf4', borderColor: '#86efac' }
+                : { backgroundColor: '#faf7f3', borderColor: '#e8ddd6' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold" style={{ color: allDone ? '#15803d' : '#8b7060' }}>
+                  {allDone ? '🎉 모든 원료 구입 완료!' : '🛒 구입 체크리스트'}
+                </p>
+                <span className="text-xs font-bold" style={{ color: allDone ? '#15803d' : '#b97070' }}>
+                  {done}/{total}
+                </span>
+              </div>
+              {/* 진행 바 */}
+              <div className="h-2 rounded-full bg-stone-100 overflow-hidden mb-2">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${total > 0 ? (done / total) * 100 : 0}%`,
+                    backgroundColor: allDone ? '#22c55e' : '#b97070',
+                  }}
+                />
+              </div>
+              <p className="text-xs" style={{ color: allDone ? '#166534' : '#a08878' }}>
+                {allDone
+                  ? '제조 가이드를 따라 레시피를 만들어보세요!'
+                  : '각 원료 카드의 번호를 눌러 구입 완료 체크하세요'}
+              </p>
             </div>
-          </div>
 
-          <ManufacturingGuide ingredients={recipe.ingredients} />
-          <StorageGuide ingredients={recipe.ingredients} />
-        </div>
-      )}
+            <div>
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">
+                원료별 초보자 가이드 + 구매 링크
+              </p>
+              <div className="flex flex-col gap-3">
+                {recipe.ingredients.map((ing, idx) => (
+                  <IngredientDetailCard
+                    key={idx}
+                    ing={ing}
+                    idx={idx}
+                    purchased={purchasedIngs.has(ing.name)}
+                    onToggle={() => togglePurchased(ing.name)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <ManufacturingGuide ingredients={recipe.ingredients} />
+            <StorageGuide ingredients={recipe.ingredients} />
+          </div>
+        );
+      })()}
 
       {/* Tab: 비용·구매 */}
       {activeTab === 'purchase' && (
