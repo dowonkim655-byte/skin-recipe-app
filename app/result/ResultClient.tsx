@@ -515,6 +515,15 @@ export default function ResultClient() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get('d');
+    // 커스터마이징 공유 파라미터 복원
+    const customParam = params.get('custom');
+    if (customParam) {
+      try {
+        const disabled = JSON.parse(atob(customParam)) as string[];
+        setDisabledIngs(new Set(disabled));
+        setCustomizeMode(true);
+      } catch { /* ignore malformed */ }
+    }
     if (encoded) {
       try {
         // unescape/escape deprecated → TextDecoder 방식
@@ -636,6 +645,26 @@ export default function ResultClient() {
       try { localStorage.setItem(`purchased_${recipe.id}`, JSON.stringify(Array.from(next))); } catch { /* ignore */ }
       return next;
     });
+  }
+
+  async function handleShareCustomized() {
+    if (disabledIngs.size === 0) return;
+    const encoded = btoa(JSON.stringify(Array.from(disabledIngs)));
+    const base = window.location.href.split('?')[0] + window.location.search.replace(/&?custom=[^&]*/g, '');
+    const shareUrl = base + (base.includes('?') ? '&' : '?') + `custom=${encoded}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = shareUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    track('share_customized');
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2000);
   }
 
   function toggleDisabled(ingName: string) {
@@ -1010,6 +1039,15 @@ export default function ResultClient() {
                       성분을 켜고 끄면 나머지 성분의 비율이 자동으로 재계산돼요.
                       {disabledIngs.size > 0 && ` (${disabledIngs.size}가지 제외 중)`}
                     </p>
+                    {disabledIngs.size > 0 && (
+                      <button
+                        onClick={handleShareCustomized}
+                        className="mt-2 w-full py-2 rounded-lg text-xs font-semibold transition-all active:scale-95"
+                        style={{ backgroundColor: '#7c3aed', color: 'white' }}
+                      >
+                        🔗 이 커스터마이징 버전 공유하기
+                      </button>
+                    )}
                   </div>
                 )}
 

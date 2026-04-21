@@ -406,13 +406,21 @@ export default function OnboardingPage() {
         </p>
       </div>
 
-      {/* FAQ link */}
-      <button
-        onClick={() => router.push('/faq')}
-        className="w-full mb-6 py-3 rounded-2xl text-xs font-semibold transition-all active:scale-95 border border-stone-200 bg-white text-text-muted"
-      >
-        ❓ DIY 스킨케어 자주 묻는 질문 보기
-      </button>
+      {/* FAQ + 레시피 목록 링크 */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => router.push('/faq')}
+          className="flex-1 py-3 rounded-2xl text-xs font-semibold transition-all active:scale-95 border border-stone-200 bg-white text-text-muted"
+        >
+          ❓ 자주 묻는 질문
+        </button>
+        <button
+          onClick={() => router.push('/recipes')}
+          className="flex-1 py-3 rounded-2xl text-xs font-semibold transition-all active:scale-95 border border-stone-200 bg-white text-text-muted"
+        >
+          📋 전체 레시피 보기
+        </button>
+      </div>
 
       {/* CTA */}
       <button
