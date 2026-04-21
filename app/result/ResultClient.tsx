@@ -451,14 +451,42 @@ export default function ResultClient() {
         logging: false,
       });
       const fileName = `내피부레시피_${recipe?.name ?? ''}.png`;
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), 'image/png')
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/png')
       );
+      if (!blob) return;
+
       const file = new File([blob], fileName, { type: 'image/png' });
+
+      // Web Share API (iOS 15+ / Android Chrome)
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: recipe?.name ?? '내 피부 레시피' });
+        try {
+          await navigator.share({ files: [file], title: recipe?.name ?? '내 피부 레시피' });
+          return;
+        } catch (e) {
+          // 사용자가 직접 취소한 경우 fallback 없이 종료
+          if ((e as Error).name === 'AbortError') return;
+          // 그 외 (NotAllowedError 등) → 아래 fallback으로
+        }
+      }
+
+      // iOS fallback: 새 탭에 이미지 열기 → 길게 눌러 저장
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        const dataUrl = canvas.toDataURL('image/png');
+        const w = window.open();
+        if (w) {
+          w.document.write(
+            `<html><body style="margin:0;background:#faf7f3;text-align:center;padding:16px">` +
+            `<p style="font-size:13px;color:#8b7060;margin-bottom:12px">이미지를 길게 눌러 사진 앱에 저장하세요</p>` +
+            `<img src="${dataUrl}" style="max-width:100%;border-radius:16px" />` +
+            `</body></html>`
+          );
+        }
         return;
       }
+
+      // Android / 데스크톱: 파일 다운로드
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = fileName;
