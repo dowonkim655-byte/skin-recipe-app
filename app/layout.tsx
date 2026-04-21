@@ -28,6 +28,13 @@ export const metadata: Metadata = {
     description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
   },
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

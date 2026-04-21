@@ -371,6 +371,17 @@ export default function ResultClient() {
   const [rating, setRating] = useState<number>(0);
   const [ratingDone, setRatingDone] = useState(false);
   const [ratingToast, setRatingToast] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [pwaInstalled, setPwaInstalled] = useState(false);
+
+  // PWA install prompt capture
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => { setPwaInstalled(true); setDeferredPrompt(null); });
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   // Load Kakao SDK
   useEffect(() => {
@@ -839,6 +850,29 @@ export default function ResultClient() {
             >
               🔄  다시 진단하기
             </button>
+
+            {/* PWA install prompt */}
+            {deferredPrompt && !pwaInstalled && (
+              <div className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                <span className="text-2xl flex-shrink-0">📲</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text-primary">홈화면에 추가하기</p>
+                  <p className="text-xs text-text-muted">앱처럼 빠르게 열 수 있어요</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') setPwaInstalled(true);
+                    setDeferredPrompt(null);
+                  }}
+                  className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold text-white active:scale-95 transition-all"
+                  style={{ backgroundColor: '#b97070' }}
+                >
+                  추가
+                </button>
+              </div>
+            )}
 
             {/* Rating */}
             <div className="mt-2 bg-white rounded-2xl p-5 shadow-sm text-center">

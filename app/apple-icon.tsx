@@ -9,17 +9,16 @@ export default function AppleIcon() {
     (
       <div
         style={{
+          width: 180,
+          height: 180,
+          borderRadius: 40,
           background: 'linear-gradient(135deg, #fde8e6 0%, #f9d0cc 100%)',
-          width: '100%',
-          height: '100%',
-          borderRadius: '40px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 110,
         }}
       >
-        🌸
+        <span style={{ fontSize: 100 }}>🌸</span>
       </div>
     ),
     { width: 180, height: 180 }
