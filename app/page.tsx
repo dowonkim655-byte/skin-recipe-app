@@ -1,5 +1,13 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
+interface SavedRecipe {
+  url: string;
+  name: string;
+  diagnosis: string;
+  savedAt: string;
+}
 
 function FeatureItem({ icon, title, desc }: { icon: string; title: string; desc: string }) {
   return (
@@ -10,6 +18,59 @@ function FeatureItem({ icon, title, desc }: { icon: string; title: string; desc:
       <div>
         <p className="font-semibold text-text-primary text-sm mb-0.5">{title}</p>
         <p className="text-text-muted text-xs leading-relaxed">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function SavedRecipes() {
+  const [saved, setSaved] = useState<SavedRecipe[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('savedRecipes');
+      if (raw) setSaved(JSON.parse(raw));
+    } catch { /* ignore */ }
+  }, []);
+
+  function remove(url: string) {
+    const next = saved.filter((r) => r.url !== url);
+    setSaved(next);
+    localStorage.setItem('savedRecipes', JSON.stringify(next));
+  }
+
+  if (saved.length === 0) return null;
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">저장된 내 레시피</p>
+        <span className="text-xs text-text-muted">{saved.length}개</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {saved.map((r) => (
+          <div key={r.url} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <a href={r.url} className="flex items-center gap-3 p-4 active:bg-rose-50 transition-colors">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                   style={{ backgroundColor: '#fde8e6' }}>
+                🌸
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm truncate">{r.name}</p>
+                <p className="text-text-muted text-xs truncate">{r.diagnosis}</p>
+              </div>
+              <span className="text-text-muted text-xs flex-shrink-0">→</span>
+            </a>
+            <div className="border-t border-stone-50 px-4 py-2 flex justify-end">
+              <button
+                onClick={() => remove(r.url)}
+                className="text-xs text-text-muted active:text-red-400 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -33,6 +94,9 @@ export default function OnboardingPage() {
           맞춤 원료 배합 레시피를 찾아드려요
         </p>
       </div>
+
+      {/* Saved recipes */}
+      <SavedRecipes />
 
       {/* Features */}
       <div className="flex flex-col gap-3 flex-1">
@@ -66,7 +130,7 @@ export default function OnboardingPage() {
       {/* CTA */}
       <button
         onClick={() => router.push('/survey')}
-        className="w-full bg-rose-deep hover:bg-rose-700 active:scale-95 text-white font-semibold py-4 rounded-2xl text-base transition-all duration-200 shadow-lg shadow-rose-200"
+        className="w-full active:scale-95 text-white font-semibold py-4 rounded-2xl text-base transition-all duration-200 shadow-lg shadow-rose-200"
         style={{ backgroundColor: '#b97070' }}
       >
         내 피부 레시피 찾기 →

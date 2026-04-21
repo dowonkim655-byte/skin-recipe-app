@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 const BASE_URL = 'https://skin-recipe-app.vercel.app';
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="max-w-md mx-auto min-h-screen relative">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   );

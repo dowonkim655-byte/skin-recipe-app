@@ -2,6 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RecipeEntry, SurveyAnswers, Ingredient } from '@/types';
+
+interface SavedRecipe {
+  url: string;
+  name: string;
+  diagnosis: string;
+  savedAt: string;
+}
 import {
   getIngredientMeta,
   calcAmountG,
@@ -344,6 +351,7 @@ export default function ResultClient() {
   const [filteredOut, setFilteredOut] = useState<Ingredient[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -372,6 +380,15 @@ export default function ResultClient() {
     setAnswers(data.answers);
     setFilteredOut(data.filteredOut ?? []);
   }, [router]);
+
+  // Check saved status after recipe loads
+  useEffect(() => {
+    if (!recipe) return;
+    try {
+      const saved: SavedRecipe[] = JSON.parse(localStorage.getItem('savedRecipes') ?? '[]');
+      setIsSaved(saved.some((r) => r.url === window.location.href));
+    } catch { /* ignore */ }
+  }, [recipe]);
 
   if (!recipe || !answers) return (
     <main className="min-h-screen bg-cream flex items-center justify-center">
@@ -414,6 +431,27 @@ export default function ResultClient() {
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleBookmark() {
+    try {
+      const saved: SavedRecipe[] = JSON.parse(localStorage.getItem('savedRecipes') ?? '[]');
+      const url = window.location.href;
+      if (isSaved) {
+        const next = saved.filter((r) => r.url !== url);
+        localStorage.setItem('savedRecipes', JSON.stringify(next));
+        setIsSaved(false);
+      } else {
+        const entry: SavedRecipe = {
+          url,
+          name: recipe!.name,
+          diagnosis: recipe!.skinDiagnosis,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem('savedRecipes', JSON.stringify([entry, ...saved]));
+        setIsSaved(true);
+      }
+    } catch { /* ignore */ }
   }
 
   async function handleCopyLink() {
@@ -617,6 +655,16 @@ export default function ResultClient() {
           ) : (
             '📷  이미지로 저장하기'
           )}
+        </button>
+
+        <button
+          onClick={handleBookmark}
+          className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95 border-2"
+          style={isSaved
+            ? { borderColor: '#c4a882', color: '#c4a882', backgroundColor: '#faf7f3' }
+            : { borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
+        >
+          {isSaved ? '✅  저장됨 (탭하면 삭제)' : '⭐  내 레시피로 저장하기'}
         </button>
 
         <button
