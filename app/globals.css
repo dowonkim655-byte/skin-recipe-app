@@ -26,3 +26,36 @@ body {
     text-wrap: balance;
   }
 }
+
+@media print {
+  /* 인쇄 시 불필요한 UI 숨김 */
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    font-size: 12pt;
+  }
+
+  /* max-width 제거, 전체 너비 활용 */
+  .max-w-md {
+    max-width: 100% !important;
+  }
+
+  /* 그림자 제거 */
+  .shadow-sm, .shadow-lg, .shadow-md {
+    box-shadow: none !important;
+  }
+
+  /* 카드 테두리 추가 */
+  .rounded-2xl {
+    border: 1px solid #e8ddd6 !important;
+    break-inside: avoid;
+  }
+
+  /* 배경 그라디언트를 단색으로 */
+  [style*="background: linear-gradient"] {
+    background: #fde8e6 !important;
+  }
+}

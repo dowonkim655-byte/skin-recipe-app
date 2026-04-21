@@ -378,6 +378,7 @@ export default function ResultClient() {
   const [pwaInstalled, setPwaInstalled] = useState(false);
   const [isNewVisitor, setIsNewVisitor] = useState(false);
   const [viralBannerDismissed, setViralBannerDismissed] = useState(false);
+  const [batchSize, setBatchSize] = useState(30);
 
   // 신규 유저 감지 (공유 링크로 들어온 경우)
   useEffect(() => {
@@ -496,6 +497,15 @@ export default function ResultClient() {
   function switchTab(tab: Tab) {
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function parseRatio(ratio: string): number {
+    return parseFloat(ratio.replace('%', '')) / 100;
+  }
+
+  function calcGrams(ratio: string): string {
+    const g = parseRatio(ratio) * batchSize;
+    return g < 0.1 ? g.toFixed(3) : g.toFixed(2);
   }
 
   async function handleSaveImage() {
@@ -627,7 +637,7 @@ export default function ResultClient() {
   return (
     <main className="min-h-screen bg-cream animate-fadeIn">
       {/* Sticky tab bar */}
-      <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm">
+      <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm print-hide">
         <div className="flex items-center px-3 pt-2 pb-1 gap-2">
           <button
             onClick={() => router.push('/')}
@@ -668,7 +678,7 @@ export default function ResultClient() {
 
       {/* 바이럴 배너 - 신규 유저(공유 링크 수신자)에게만 표시 */}
       {isNewVisitor && !viralBannerDismissed && (
-        <div className="mx-5 mt-4 rounded-2xl overflow-hidden shadow-sm"
+        <div className="mx-5 mt-4 rounded-2xl overflow-hidden shadow-sm print-hide"
              style={{ background: 'linear-gradient(135deg, #4a3030 0%, #b97070 100%)' }}>
           <div className="p-4">
             <div className="flex items-start justify-between mb-2">
@@ -762,10 +772,35 @@ export default function ResultClient() {
 
               {/* Ingredients */}
               <div className="bg-white rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">원료 배합 레시피</p>
                   <span className="text-xs text-text-muted">{recipe.ingredients.length}가지 성분</span>
                 </div>
+
+                {/* 배합량 계산기 */}
+                <div className="rounded-xl p-3 mb-4" style={{ backgroundColor: '#faf7f3' }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold" style={{ color: '#8b7060' }}>⚗️ 배합량 계산</p>
+                    <div className="flex gap-1">
+                      {[10, 30, 50, 100].map((ml) => (
+                        <button
+                          key={ml}
+                          onClick={() => setBatchSize(ml)}
+                          className="text-xs px-2 py-0.5 rounded-full font-semibold transition-colors"
+                          style={batchSize === ml
+                            ? { backgroundColor: '#b97070', color: 'white' }
+                            : { backgroundColor: 'white', color: '#b97070', border: '1px solid #e8d8d8' }}
+                        >
+                          {ml}ml
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs" style={{ color: '#a08878' }}>
+                    총 <span className="font-bold" style={{ color: '#b97070' }}>{batchSize}ml</span> 제조 기준 · 1ml≈1g (수계 기준)
+                  </p>
+                </div>
+
                 <div className="flex flex-col gap-4">
                   {recipe.ingredients.map((ing, idx) => (
                     <div key={idx} className="flex gap-3">
@@ -787,6 +822,10 @@ export default function ResultClient() {
                           <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
                                 style={{ backgroundColor: '#c4a882' }}>
                             {ing.ratio}
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: '#f0e8dc', color: '#8b7060' }}>
+                            {calcGrams(ing.ratio)}g
                           </span>
                           <span className="text-xs" style={{ color: '#b97070' }}>↗</span>
                         </div>
@@ -852,7 +891,7 @@ export default function ResultClient() {
           </div>
 
           {/* Action buttons */}
-          <div className="px-5 pb-12 flex flex-col gap-3">
+          <div className="px-5 pb-12 flex flex-col gap-3 print-hide">
             <p className="text-xs text-center text-text-muted mb-1">레시피 저장 또는 공유하기</p>
 
             <button
@@ -906,13 +945,23 @@ export default function ResultClient() {
               </button>
             </div>
 
-            <button
-              onClick={() => { sessionStorage.clear(); router.push('/'); }}
-              className="w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 active:scale-95"
-              style={{ backgroundColor: '#f0e8dc', color: '#6b5040' }}
-            >
-              🔄  다시 진단하기
-            </button>
+            {/* 인쇄 + 재진단 row */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95 border-2"
+                style={{ borderColor: '#c4a882', color: '#8b7060', backgroundColor: 'white' }}
+              >
+                🖨️  인쇄하기
+              </button>
+              <button
+                onClick={() => { sessionStorage.clear(); router.push('/'); }}
+                className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95"
+                style={{ backgroundColor: '#f0e8dc', color: '#6b5040' }}
+              >
+                🔄  다시 진단하기
+              </button>
+            </div>
 
             {/* PWA install prompt */}
             {deferredPrompt && !pwaInstalled && (
