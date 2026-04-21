@@ -4,8 +4,24 @@
 
 :root {
   --bg-cream: #faf7f3;
+  --bg-card: #ffffff;
+  --bg-beige: #f0e8dc;
   --color-rose: #dfa8a8;
   --color-brown: #8b6a50;
+  --text-primary: #2c1f14;
+  --text-secondary: #6b5040;
+  --text-muted: #a08878;
+  --border-color: #f0ebe5;
+}
+
+.dark {
+  --bg-cream: #18161380;
+  --bg-card: #252220;
+  --bg-beige: #2a2521;
+  --text-primary: #f0e8dc;
+  --text-secondary: #c4a882;
+  --text-muted: #8b7060;
+  --border-color: #3a3025;
 }
 
 * {
@@ -15,11 +31,32 @@
 }
 
 body {
-  background-color: var(--bg-cream);
+  background-color: #faf7f3;
   font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', 'Malgun Gothic', sans-serif;
   color: #2c1f14;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s, color 0.2s;
 }
+
+/* Dark mode structural overrides */
+.dark body { background-color: #1a1714; color: #f0e8dc; }
+.dark .bg-cream { background-color: #1a1714 !important; }
+.dark .bg-white { background-color: #252220 !important; }
+.dark .bg-beige { background-color: #2a2521 !important; }
+.dark .bg-stone-50 { background-color: #2a2521 !important; }
+.dark .bg-stone-100 { background-color: #332e2a !important; }
+.dark .bg-rose-50 { background-color: #2a1f1f !important; }
+.dark .bg-amber-50 { background-color: #2a2118 !important; }
+.dark .bg-green-50 { background-color: #1a2419 !important; }
+.dark .bg-emerald-50 { background-color: #1a2419 !important; }
+.dark .border-stone-100 { border-color: #3a3025 !important; }
+.dark .border-stone-200 { border-color: #3a3025 !important; }
+.dark .text-text-primary { color: #f0e8dc !important; }
+.dark .text-text-secondary { color: #c4a882 !important; }
+.dark .text-text-muted { color: #8b7060 !important; }
+.dark .text-stone-500 { color: #8b7060 !important; }
+.dark .shadow-sm { box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important; }
+.dark .shadow-lg { box-shadow: 0 8px 24px rgba(0,0,0,0.6) !important; }
 
 @layer utilities {
   .text-balance {

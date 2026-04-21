@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/react';
+import { ThemeScript, ThemeToggle } from '@/components/ThemeProvider';
 import './globals.css';
 
 const BASE_URL = 'https://skin-recipe-app.vercel.app';
@@ -57,12 +58,19 @@ const webAppSchema = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="bg-cream min-h-screen">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
         />
+        {/* Dark mode toggle - fixed position */}
+        <div className="fixed top-3 right-3 z-50">
+          <ThemeToggle />
+        </div>
         <div className="max-w-md mx-auto min-h-screen relative">
           {children}
         </div>
