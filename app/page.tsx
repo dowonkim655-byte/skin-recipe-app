@@ -58,6 +58,57 @@ function LastViewed() {
   );
 }
 
+function SeasonalBanner() {
+  const month = new Date().getMonth() + 1;
+  const season =
+    month >= 3 && month <= 5 ? 'spring' :
+    month >= 6 && month <= 8 ? 'summer' :
+    month >= 9 && month <= 11 ? 'fall' : 'winter';
+
+  const SEASONAL = {
+    spring: {
+      emoji: '🌸', label: '봄 환절기',
+      msg: '기온·습도 변화로 피부 장벽이 약해지는 시기예요.',
+      rec: '민감성 장벽 케어 레시피 추천',
+      gradient: 'linear-gradient(135deg, #fde8e6 0%, #faf0f8 100%)',
+      color: '#b97070',
+    },
+    summer: {
+      emoji: '☀️', label: '여름 시즌',
+      msg: '피지·모공 고민이 늘어나는 시기예요.',
+      rec: '지성·모공 밸런싱 레시피 추천',
+      gradient: 'linear-gradient(135deg, #fef9c3 0%, #fde68a 100%)',
+      color: '#b45309',
+    },
+    fall: {
+      emoji: '🍂', label: '가을 환절기',
+      msg: '건조해진 공기로 수분이 급격히 빠져나가요.',
+      rec: '보습·장벽 강화 레시피 추천',
+      gradient: 'linear-gradient(135deg, #fef3e2 0%, #fde8cc 100%)',
+      color: '#92400e',
+    },
+    winter: {
+      emoji: '❄️', label: '겨울 시즌',
+      msg: '실내 난방으로 피부가 극도로 건조해져요.',
+      rec: '건성 집중 보습 레시피 추천',
+      gradient: 'linear-gradient(135deg, #e0f2fe 0%, #e8f4fd 100%)',
+      color: '#075985',
+    },
+  };
+
+  const s = SEASONAL[season];
+  return (
+    <div className="mb-5 rounded-2xl p-4" style={{ background: s.gradient }}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">{s.emoji}</span>
+        <span className="text-xs font-bold" style={{ color: s.color }}>{s.label} 피부 케어</span>
+      </div>
+      <p className="text-xs leading-relaxed mb-2" style={{ color: s.color, opacity: 0.85 }}>{s.msg}</p>
+      <p className="text-xs font-semibold" style={{ color: s.color }}>→ {s.rec}</p>
+    </div>
+  );
+}
+
 function FeatureItem({ icon, title, desc }: { icon: string; title: string; desc: string }) {
   return (
     <div className="flex items-start gap-4 p-4 bg-white rounded-2xl shadow-sm">
@@ -204,6 +255,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Last viewed + Saved recipes */}
+      <SeasonalBanner />
       <LastViewed />
       <SavedRecipes />
 

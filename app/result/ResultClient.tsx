@@ -701,6 +701,39 @@ export default function ResultClient() {
     setTimeout(() => setToastVisible(false), 2000);
   }
 
+  async function handleShareText() {
+    if (!recipe) return;
+    const ingLines = recipe.ingredients
+      .map((i) => `• ${i.name} ${i.ratio}`)
+      .join('\n');
+    const text = [
+      `🌸 내 피부 레시피`,
+      ``,
+      `✨ ${recipe.name}`,
+      `📊 ${recipe.skinDiagnosis}`,
+      ``,
+      `원료 배합:`,
+      ingLines,
+      ``,
+      `나도 내 레시피 찾기 →`,
+      `https://skin-recipe-app.vercel.app`,
+    ].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    track('share_text');
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2000);
+  }
+
   return (
     <main className="min-h-screen bg-cream animate-fadeIn">
       {/* Sticky tab bar */}
@@ -1101,16 +1134,24 @@ export default function ResultClient() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 3C6.477 3 2 6.582 2 11.012c0 2.85 1.72 5.356 4.32 6.847l-.9 3.317c-.08.29.24.526.495.364L9.89 19.17A11.7 11.7 0 0 0 12 19.023c5.523 0 10-3.582 10-8.011S17.523 3 12 3z"/>
                 </svg>
-                카카오톡 공유
+                카카오 공유
               </button>
               <button
                 onClick={handleCopyLink}
                 className="flex-1 py-4 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95 border-2"
                 style={{ borderColor: '#b97070', color: '#b97070', backgroundColor: 'white' }}
               >
-                🔗  링크 복사
+                🔗 링크 복사
               </button>
             </div>
+            {/* 텍스트 공유 */}
+            <button
+              onClick={handleShareText}
+              className="w-full py-3.5 rounded-2xl font-semibold text-sm transition-all duration-200 active:scale-95 border"
+              style={{ borderColor: '#d1d5db', color: '#6b7280', backgroundColor: 'white' }}
+            >
+              📋 카카오톡 채팅용 텍스트 복사
+            </button>
 
             {/* 인쇄 + 재진단 row */}
             <div className="flex gap-3">

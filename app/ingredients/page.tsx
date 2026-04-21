@@ -1,6 +1,7 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getIngredientMeta } from '@/lib/ingredientMeta';
 
 interface IngredientInfo {
   name: string;
@@ -464,66 +465,91 @@ function IngredientsPage() {
         ) : (
           <div className="flex flex-col gap-4">
             <p className="text-xs text-text-muted">{filtered.length}개 성분</p>
-            {filtered.map((ing) => (
-              <div key={ing.name} className="bg-white rounded-2xl p-5 shadow-sm">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h2 className="font-bold text-text-primary text-base">{ing.name}</h2>
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white"
-                            style={{ backgroundColor: ing.categoryColor }}>
-                        {ing.category}
-                      </span>
+            {filtered.map((ing) => {
+              const meta = getIngredientMeta(ing.name);
+              return (
+                <div key={ing.name} className="bg-white rounded-2xl p-5 shadow-sm">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <h2 className="font-bold text-text-primary text-base">{ing.name}</h2>
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium text-white"
+                              style={{ backgroundColor: ing.categoryColor }}>
+                          {ing.category}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-muted">{ing.englishName}</p>
                     </div>
-                    <p className="text-xs text-text-muted">{ing.englishName}</p>
+                    <span className="text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-2"
+                          style={{ backgroundColor: `${DIFFICULTY_COLORS[ing.difficulty]}20`, color: DIFFICULTY_COLORS[ing.difficulty] }}>
+                      {ing.difficulty}
+                    </span>
                   </div>
-                  <span className="text-xs px-2 py-1 rounded-full font-semibold flex-shrink-0 ml-2"
-                        style={{ backgroundColor: `${DIFFICULTY_COLORS[ing.difficulty]}20`, color: DIFFICULTY_COLORS[ing.difficulty] }}>
-                    {ing.difficulty}
-                  </span>
-                </div>
 
-                {/* Desc */}
-                <p className="text-sm text-text-secondary leading-relaxed mb-3">{ing.desc}</p>
+                  {/* Desc */}
+                  <p className="text-sm text-text-secondary leading-relaxed mb-3">{ing.desc}</p>
 
-                {/* Effect */}
-                <div className="bg-rose-50 rounded-xl p-3 mb-3">
-                  <p className="text-xs font-semibold mb-1" style={{ color: '#b97070' }}>✨ 주요 효능</p>
-                  <p className="text-xs text-text-secondary leading-relaxed">{ing.effect}</p>
-                </div>
+                  {/* Effect */}
+                  <div className="bg-rose-50 rounded-xl p-3 mb-3">
+                    <p className="text-xs font-semibold mb-1" style={{ color: '#b97070' }}>✨ 주요 효능</p>
+                    <p className="text-xs text-text-secondary leading-relaxed">{ing.effect}</p>
+                  </div>
 
-                {/* Caution */}
-                <div className="bg-amber-50 rounded-xl p-3 mb-4">
-                  <p className="text-xs font-semibold text-amber-700 mb-1">⚠️ 주의사항</p>
-                  <p className="text-xs text-amber-700 leading-relaxed">{ing.caution}</p>
-                </div>
+                  {/* 사용 팁 (from ingredientMeta) */}
+                  {meta?.usageTip && (
+                    <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: '#faf7f3' }}>
+                      <p className="text-xs font-semibold mb-1" style={{ color: '#8b7060' }}>💡 사용 팁</p>
+                      <p className="text-xs leading-relaxed" style={{ color: '#6b5040' }}>{meta.usageTip}</p>
+                    </div>
+                  )}
 
-                {/* Price + Buy */}
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-text-muted mb-0.5">시중 구매가</p>
-                    <p className="text-sm font-semibold text-text-primary">{ing.priceRange}</p>
+                  {/* Caution */}
+                  <div className="bg-amber-50 rounded-xl p-3 mb-3">
+                    <p className="text-xs font-semibold text-amber-700 mb-1">⚠️ 주의사항</p>
+                    <p className="text-xs text-amber-700 leading-relaxed">{ing.caution}</p>
+                  </div>
+
+                  {/* 함께 쓰지 마세요 (from ingredientMeta) */}
+                  {meta?.incompatibleWith && meta.incompatibleWith.length > 0 && (
+                    <div className="rounded-xl p-3 mb-3 border" style={{ backgroundColor: '#fef2f2', borderColor: '#fecaca' }}>
+                      <p className="text-xs font-semibold text-red-700 mb-1.5">🚫 함께 고농도로 쓰지 마세요</p>
+                      <div className="flex flex-col gap-1">
+                        {meta.incompatibleWith.map((item) => (
+                          <p key={item} className="text-xs text-red-700 flex items-start gap-1.5">
+                            <span className="flex-shrink-0">•</span><span>{item}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Price + Buy */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-xs text-text-muted mb-0.5">시중 구매가</p>
+                      <p className="text-sm font-semibold text-text-primary">{ing.priceRange}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openSearch(ing.searchKeyword, 'coupang')}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white active:scale-95 transition-all"
+                      style={{ backgroundColor: '#e5401b' }}
+                    >
+                      쿠팡에서 찾기
+                    </button>
+                    <button
+                      onClick={() => openSearch(ing.searchKeyword, 'naver')}
+                      className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white active:scale-95 transition-all"
+                      style={{ backgroundColor: '#03c75a' }}
+                    >
+                      네이버 쇼핑
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openSearch(ing.searchKeyword, 'coupang')}
-                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white active:scale-95 transition-all"
-                    style={{ backgroundColor: '#e5401b' }}
-                  >
-                    쿠팡에서 찾기
-                  </button>
-                  <button
-                    onClick={() => openSearch(ing.searchKeyword, 'naver')}
-                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white active:scale-95 transition-all"
-                    style={{ backgroundColor: '#03c75a' }}
-                  >
-                    네이버 쇼핑
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
