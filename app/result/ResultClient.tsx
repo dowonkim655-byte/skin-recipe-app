@@ -69,6 +69,72 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'purchase', label: '🛒 비용·구매' },
 ];
 
+interface SkinScores {
+  moisture: number;   // 보습도 0-100
+  barrier: number;    // 장벽 강도 0-100
+  tone: number;       // 톤 균일도 0-100
+  sensitivity: number; // 진정 필요도 0-100 (높을수록 민감)
+}
+
+function calcSkinScores(answers: SurveyAnswers): SkinScores {
+  const concerns = Array.isArray(answers.concern) ? answers.concern : [answers.concern];
+
+  // 보습도: 건성일수록 낮음
+  const moistureBase: Record<string, number> = {
+    건성: 28, 민감성: 45, 복합성: 52, 지성: 68, 정상: 72,
+    계절마다달라요: 48, 최근변했어요: 40,
+  };
+  let moisture = moistureBase[answers.skinType] ?? 50;
+  if (concerns.includes('보습')) moisture -= 12;
+  moisture = Math.max(15, Math.min(92, moisture));
+
+  // 장벽 강도: 민감할수록 낮음
+  const barrierBase: Record<string, number> = {
+    매우민감: 22, 약간민감: 42, 보통: 65, 둔감: 82,
+  };
+  let barrier = barrierBase[answers.sensitivity] ?? 55;
+  if (answers.skinType === '건성') barrier -= 8;
+  if (concerns.includes('홍조진정')) barrier -= 10;
+  barrier = Math.max(18, Math.min(90, barrier));
+
+  // 톤 균일도: 미백/칙칙함 고민일수록 낮음
+  let tone = 72;
+  if (concerns.includes('미백')) tone -= 20;
+  if (concerns.includes('전체칙칙함')) tone -= 25;
+  if (answers.skinType === '지성') tone -= 8;
+  tone = Math.max(20, Math.min(90, tone));
+
+  // 진정 필요도: 민감+홍조 고민일수록 높음
+  let sensitivity = 30;
+  if (answers.sensitivity === '매우민감') sensitivity += 40;
+  else if (answers.sensitivity === '약간민감') sensitivity += 20;
+  if (concerns.includes('홍조진정')) sensitivity += 20;
+  if (answers.skinType === '민감성') sensitivity += 15;
+  sensitivity = Math.max(10, Math.min(95, sensitivity));
+
+  return { moisture, barrier, tone, sensitivity };
+}
+
+function ScoreBar({ label, value, color, emoji }: { label: string; value: number; color: string; emoji: string }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">{emoji}</span>
+          <span className="text-xs font-semibold text-text-primary">{label}</span>
+        </div>
+        <span className="text-xs font-bold" style={{ color }}>{value}</span>
+      </div>
+      <div className="h-2 rounded-full bg-stone-100 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${value}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Tag({ label }: { label: string }) {
   return (
     <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium"
@@ -860,6 +926,28 @@ export default function ResultClient() {
                   <Tag label={`질감: ${LABEL_MAP.texture[answers.texture] ?? answers.texture}`} />
                 </div>
               </div>
+
+              {/* 피부 스코어 카드 */}
+              {(() => {
+                const scores = calcSkinScores(answers);
+                return (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">📊 내 피부 스코어</p>
+                      <span className="text-xs text-text-muted">100점 만점</span>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <ScoreBar label="보습도" value={scores.moisture} color="#5b9bd5" emoji="💧" />
+                      <ScoreBar label="장벽 강도" value={scores.barrier} color="#70b97a" emoji="🛡️" />
+                      <ScoreBar label="톤 균일도" value={scores.tone} color="#c4a882" emoji="✨" />
+                      <ScoreBar label="진정 필요도" value={scores.sensitivity} color="#e87a7a" emoji="🌡️" />
+                    </div>
+                    <p className="text-xs text-text-muted mt-3 text-center">
+                      * 설문 답변 기반 추정 점수예요. 실제 측정값과 다를 수 있어요.
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Avoid filter */}
               {activeAvoid.length > 0 && (

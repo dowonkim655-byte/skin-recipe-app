@@ -11,6 +11,13 @@ const CONCERN_MAP: Record<string, string[]> = {
   '전체칙칙함': ['전체칙칙함', '미백'],
 };
 
+// 오일 성분 키워드 - texture='오일' 선호자에게 해당 레시피 가중치
+const OIL_KEYWORDS = ['스쿠알란', '레티놀', '코엔자임', '토코페롤', '비타민 E', '오일'];
+
+function hasOil(recipe: RecipeEntry): boolean {
+  return recipe.ingredients.some((i) => OIL_KEYWORDS.some((k) => i.name.includes(k)));
+}
+
 export interface RecommendOutput {
   recipe: RecipeEntry;
   filteredOut: Ingredient[];
@@ -57,6 +64,19 @@ export function findBestRecipe(answers: SurveyAnswers, recipes: RecipeEntry[]): 
 
     // Sensitivity bonus: prefer sensitive recipes for sensitive users
     if (isSensitive && recipe.matchCriteria.skinType.includes('민감성')) score += 1;
+
+    // Routine: 입문자 → 성분 적은 레시피 선호, 풀케어 → 성분 많은 레시피 선호
+    const ingCount = recipe.ingredients.length;
+    if (answers.routine === '스킨케어처음' || answers.routine === '미니멀') {
+      if (ingCount <= 4) score += 2;
+    } else if (answers.routine === '풀케어' || answers.routine === '세럼') {
+      if (ingCount >= 6) score += 2;
+    }
+
+    // Texture: 오일/딥 영양 선택자 → 오일 성분 포함 레시피 가중치
+    if (answers.texture === '오일' && hasOil(recipe)) score += 2;
+    // 가벼운/젤 선택자 → 오일 성분 없는 레시피 가중치
+    if ((answers.texture === '가벼운' || answers.texture === '젤') && !hasOil(recipe)) score += 1;
 
     if (score > bestScore) {
       bestScore = score;
