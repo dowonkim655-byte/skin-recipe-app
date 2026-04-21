@@ -23,6 +23,12 @@ export const metadata: Metadata = {
     title: '내 피부 레시피',
     description: '6가지 질문으로 나만을 위한 맞춤 원료 배합 레시피를 찾아드려요.',
   },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '내 피부 레시피',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
