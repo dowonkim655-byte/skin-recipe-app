@@ -116,7 +116,10 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
   const topIngs = recipe.ingredients.slice(0, 3).map((i) => i.name.split(' (')[0]);
 
   return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-stone-50">
+    <Link
+      href={`/recipes/${recipe.id}`}
+      className="block bg-white rounded-2xl p-4 shadow-sm border border-stone-50 active:bg-rose-50 transition-colors"
+    >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-text-primary text-sm">{recipe.name}</h3>
@@ -154,14 +157,12 @@ function RecipeCard({ recipe }: { recipe: Recipe }) {
         )}
       </div>
 
-      {/* 이 레시피 찾기 링크 - 해당 레시피가 나올 가능성 높은 설문으로 안내 */}
-      <Link
-        href="/survey"
-        className="block w-full py-2 rounded-xl text-xs font-semibold text-center transition-all active:scale-95"
+      <div
+        className="block w-full py-2 rounded-xl text-xs font-semibold text-center"
         style={{ backgroundColor: '#fde8e6', color: '#7a3838' }}
       >
-        이 레시피 받기 →
-      </Link>
-    </div>
+        상세 보기 →
+      </div>
+    </Link>
   );
 }
