@@ -19,11 +19,17 @@ export interface RecommendOutput {
 export function findBestRecipe(answers: SurveyAnswers, recipes: RecipeEntry[]): RecommendOutput {
   const skinTypes = SKIN_TYPE_MAP[answers.skinType] ?? [answers.skinType];
 
-  // concern is now string[] — flatten all mappings
   const rawConcerns = Array.isArray(answers.concern) ? answers.concern : [answers.concern];
+
+  // Primary concern = first selected (highest user priority)
+  const primaryConcerns = CONCERN_MAP[rawConcerns[0]] ?? [rawConcerns[0]];
+
+  // Full expanded concern list
   const concerns = rawConcerns.flatMap((c) => CONCERN_MAP[c] ?? [c]);
 
-  // Build avoid set from Q6 + texture preference
+  // Prefer 민감성 recipes when user is very sensitive
+  const isSensitive = answers.sensitivity === '매우민감' || answers.sensitivity === '약간민감';
+
   const avoid = (answers.avoidIngredients ?? []).filter((a) => a !== '없음');
   if (answers.texture === '무향저자극' && !avoid.includes('향료')) avoid.push('향료');
 
@@ -33,11 +39,24 @@ export function findBestRecipe(answers: SurveyAnswers, recipes: RecipeEntry[]): 
   for (const recipe of recipes) {
     let score = 0;
     const skinMatch = recipe.matchCriteria.skinType.some((s) => skinTypes.includes(s));
-    const concernMatchCount = recipe.matchCriteria.concern.filter((c) => concerns.includes(c)).length;
+    const matchedConcerns = recipe.matchCriteria.concern.filter((c) => concerns.includes(c));
+    const concernMatchCount = matchedConcerns.length;
+    const matchesPrimary = matchedConcerns.some((c) => primaryConcerns.includes(c));
 
+    // Skin type: +3
     if (skinMatch) score += 3;
+
+    // Each matched concern: +2
     score += concernMatchCount * 2;
+
+    // Primary concern bonus: +3 (breaks ties toward what user cares about most)
+    if (matchesPrimary) score += 3;
+
+    // Synergy: skin + concern both match: +2
     if (skinMatch && concernMatchCount > 0) score += 2;
+
+    // Sensitivity bonus: prefer sensitive recipes for sensitive users
+    if (isSensitive && recipe.matchCriteria.skinType.includes('민감성')) score += 1;
 
     if (score > bestScore) {
       bestScore = score;
@@ -45,7 +64,7 @@ export function findBestRecipe(answers: SurveyAnswers, recipes: RecipeEntry[]): 
     }
   }
 
-  // Filter ingredients
+  // Filter ingredients by avoid tags
   const filteredOut: Ingredient[] = [];
   let finalIngredients = bestRecipe.ingredients;
 

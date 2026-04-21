@@ -10,6 +10,8 @@ const STEPS = [
   { label: '맞춤 레시피 생성 완료', delay: 3800 },
 ];
 
+const MIN_DISPLAY_MS = 4400; // animation must finish before navigation
+
 export default function AnalysisPage() {
   const router = useRouter();
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -24,6 +26,7 @@ export default function AnalysisPage() {
 
     const answers = JSON.parse(answersRaw);
 
+    // Step animation timers
     STEPS.forEach((step, index) => {
       setTimeout(() => {
         setCurrentStep(index);
@@ -31,25 +34,27 @@ export default function AnalysisPage() {
       }, step.delay);
     });
 
-    setTimeout(async () => {
-      try {
-        const res = await fetch('/api/recommend', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(answers),
-        });
-        const data = await res.json();
+    // Run fetch and minimum display time in parallel — navigate when both complete
+    const fetchPromise = fetch('/api/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(answers),
+    }).then((r) => r.json());
+
+    const timerPromise = new Promise<void>((resolve) => setTimeout(resolve, MIN_DISPLAY_MS));
+
+    Promise.all([fetchPromise, timerPromise])
+      .then(([data]) => {
         sessionStorage.setItem(
           'skinRecipeResult',
           JSON.stringify({ recipe: data.recipe, filteredOut: data.filteredOut, answers })
         );
         const encoded = encodeURIComponent(btoa(JSON.stringify(answers)));
         router.push(`/result?d=${encoded}`);
-      } catch (e) {
-        console.error(e);
+      })
+      .catch(() => {
         router.push('/result');
-      }
-    }, 4400);
+      });
   }, [router]);
 
   return (
