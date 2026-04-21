@@ -369,6 +369,9 @@ export default function ResultClient() {
   const [isSaved, setIsSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('recipe');
   const [selectedIng, setSelectedIng] = useState<Ingredient | null>(null);
+  const [rating, setRating] = useState<number>(0);
+  const [ratingDone, setRatingDone] = useState(false);
+  const [ratingToast, setRatingToast] = useState(false);
 
   // Load Kakao SDK
   useEffect(() => {
@@ -426,6 +429,9 @@ export default function ResultClient() {
     try {
       const saved: SavedRecipe[] = JSON.parse(localStorage.getItem('savedRecipes') ?? '[]');
       setIsSaved(saved.some((r) => r.url === window.location.href));
+      const key = `rating_${recipe.name}`;
+      const prev = localStorage.getItem(key);
+      if (prev) { setRating(Number(prev)); setRatingDone(true); }
     } catch { /* ignore */ }
   }, [recipe]);
 
@@ -440,6 +446,15 @@ export default function ResultClient() {
   const activeAvoid = (answers.avoidIngredients ?? []).filter((a) => a !== '없음');
   if (answers.texture === '무향저자극' && !activeAvoid.includes('향료')) activeAvoid.push('향료');
   const isOrganic = answers.texture === '천연오가닉';
+
+  function handleRating(star: number) {
+    if (ratingDone) return;
+    setRating(star);
+    setRatingDone(true);
+    try { localStorage.setItem(`rating_${recipe!.name}`, String(star)); } catch { /* ignore */ }
+    setRatingToast(true);
+    setTimeout(() => setRatingToast(false), 2500);
+  }
 
   function switchTab(tab: Tab) {
     setActiveTab(tab);
@@ -809,6 +824,29 @@ export default function ResultClient() {
             >
               🔄  다시 진단하기
             </button>
+
+            {/* Rating */}
+            <div className="mt-2 bg-white rounded-2xl p-5 shadow-sm text-center">
+              <p className="text-sm font-semibold text-text-primary mb-1">
+                {ratingDone ? '피드백 감사해요! 🙏' : '이 레시피 어떠셨나요?'}
+              </p>
+              <p className="text-xs text-text-muted mb-4">
+                {ratingDone ? `${rating}점 주셨어요. 레시피 개선에 반영할게요.` : '별점을 남겨주시면 레시피 개선에 도움돼요'}
+              </p>
+              <div className="flex justify-center gap-3">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => handleRating(star)}
+                    disabled={ratingDone}
+                    className="text-3xl transition-transform active:scale-90"
+                    style={{ opacity: ratingDone && star > rating ? 0.25 : 1 }}
+                  >
+                    {star <= rating ? '⭐' : '☆'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -851,6 +889,12 @@ export default function ResultClient() {
       )}
 
       <Toast visible={toastVisible} />
+      <div
+        className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-sm px-5 py-3 rounded-full shadow-lg transition-all duration-300 pointer-events-none z-50"
+        style={{ opacity: ratingToast ? 1 : 0, transform: `translateX(-50%) translateY(${ratingToast ? 0 : '8px'})` }}
+      >
+        ⭐ 소중한 피드백 감사해요!
+      </div>
 
       {/* Ingredient detail modal */}
       {selectedIng && (() => {
