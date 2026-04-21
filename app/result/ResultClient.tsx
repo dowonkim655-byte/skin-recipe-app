@@ -71,7 +71,7 @@ const TABS: { id: Tab; label: string }[] = [
 function Tag({ label }: { label: string }) {
   return (
     <span className="inline-block px-2.5 py-1 rounded-full text-xs font-medium"
-          style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
+          style={{ backgroundColor: '#fde8e6', color: '#7a3838' }}>
       {label}
     </span>
   );
@@ -232,7 +232,7 @@ function CostTable({ ingredients }: { ingredients: Ingredient[] }) {
           <p className="text-xs" style={{ color: '#8b4040' }}>
             시중 유사 제품(약 {MARKET_PRICE.toLocaleString()}원) 대비
           </p>
-          <p className="text-lg font-bold mt-0.5" style={{ color: '#b97070' }}>
+          <p className="text-lg font-bold mt-0.5" style={{ color: '#7a3838' }}>
             약 {saving}% 절약!
           </p>
         </div>

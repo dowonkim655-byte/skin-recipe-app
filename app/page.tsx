@@ -76,7 +76,7 @@ function LastViewed() {
               </p>
             </div>
             <span className="text-xs font-semibold flex-shrink-0 px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
+                  style={{ backgroundColor: '#fde8e6', color: '#7a3838' }}>
               보기
             </span>
           </a>
@@ -284,7 +284,7 @@ export default function OnboardingPage() {
             { value: '무료', label: '완전 무료' },
           ].map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-lg font-bold" style={{ color: '#b97070' }}>{s.value}</p>
+              <p className="text-lg font-bold" style={{ color: '#7a3838' }}>{s.value}</p>
               <p className="text-xs text-text-muted">{s.label}</p>
             </div>
           ))}
@@ -337,7 +337,7 @@ export default function OnboardingPage() {
                 {r.ingredients.map((ing) => (
                   <span key={ing}
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
-                        style={{ backgroundColor: '#fde8e6', color: '#b97070' }}>
+                        style={{ backgroundColor: '#fde8e6', color: '#7a3838' }}>
                     {ing}
                   </span>
                 ))}

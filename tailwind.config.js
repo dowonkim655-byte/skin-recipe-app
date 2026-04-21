@@ -19,7 +19,7 @@ module.exports = {
         'brown-dark': '#4a3020',
         'text-primary': '#2c1f14',
         'text-secondary': '#6b5040',
-        'text-muted': '#a08878',
+        'text-muted': '#6b5848',
       },
       fontFamily: {
         serif: ['Georgia', 'serif'],
