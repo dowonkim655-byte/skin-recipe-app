@@ -280,7 +280,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Legal notice */}
-      <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+      <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4">
         <p className="text-xs text-amber-800 text-center leading-relaxed">
           <span className="font-semibold">안내사항</span><br />
           이 서비스는 의료 서비스가 아닙니다. 제공되는 레시피는 일반적인<br />
@@ -288,6 +288,14 @@ export default function OnboardingPage() {
           피부 질환이 있는 경우 전문의와 상담하세요.
         </p>
       </div>
+
+      {/* FAQ link */}
+      <button
+        onClick={() => router.push('/faq')}
+        className="w-full mb-6 py-3 rounded-2xl text-xs font-semibold transition-all active:scale-95 border border-stone-200 bg-white text-text-muted"
+      >
+        ❓ DIY 스킨케어 자주 묻는 질문 보기
+      </button>
 
       {/* CTA */}
       <button

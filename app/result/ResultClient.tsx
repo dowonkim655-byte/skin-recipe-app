@@ -376,6 +376,16 @@ export default function ResultClient() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [pwaInstalled, setPwaInstalled] = useState(false);
+  const [isNewVisitor, setIsNewVisitor] = useState(false);
+  const [viralBannerDismissed, setViralBannerDismissed] = useState(false);
+
+  // 신규 유저 감지 (공유 링크로 들어온 경우)
+  useEffect(() => {
+    try {
+      const hasHistory = localStorage.getItem('lastSurveyAnswers');
+      if (!hasHistory) setIsNewVisitor(true);
+    } catch { /* ignore */ }
+  }, []);
 
   // PWA install prompt capture
   useEffect(() => {
@@ -625,6 +635,12 @@ export default function ResultClient() {
           >
             ← 홈
           </button>
+          <button
+            onClick={() => router.push('/faq')}
+            className="text-xs text-text-muted px-2 py-1 rounded-lg active:bg-stone-100 flex-shrink-0"
+          >
+            FAQ
+          </button>
           <div className="flex-1" />
           <button
             onClick={() => router.push('/ingredients')}
@@ -649,6 +665,34 @@ export default function ResultClient() {
           ))}
         </div>
       </div>
+
+      {/* 바이럴 배너 - 신규 유저(공유 링크 수신자)에게만 표시 */}
+      {isNewVisitor && !viralBannerDismissed && (
+        <div className="mx-5 mt-4 rounded-2xl overflow-hidden shadow-sm"
+             style={{ background: 'linear-gradient(135deg, #4a3030 0%, #b97070 100%)' }}>
+          <div className="p-4">
+            <div className="flex items-start justify-between mb-2">
+              <p className="text-white text-xs font-semibold opacity-80">친구의 레시피를 보고 있어요 🌸</p>
+              <button
+                onClick={() => setViralBannerDismissed(true)}
+                className="text-white opacity-50 text-xs ml-2 flex-shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-white text-sm font-bold mb-3 leading-snug">
+              나만의 맞춤 레시피도<br />무료로 찾아보세요!
+            </p>
+            <button
+              onClick={() => router.push('/survey')}
+              className="w-full py-2.5 rounded-xl text-sm font-bold bg-white active:scale-95 transition-all"
+              style={{ color: '#b97070' }}
+            >
+              내 피부 레시피 찾기 →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab: 레시피 */}
       {activeTab === 'recipe' && (
