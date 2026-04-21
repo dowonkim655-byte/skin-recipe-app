@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type AnswerValue = string | string[];
@@ -123,6 +123,7 @@ export default function SurveyPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerValue>>({});
   const [selected, setSelected] = useState<AnswerValue | null>(null);
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const question = QUESTIONS[currentStep];
   const progress = ((currentStep + 1) / QUESTIONS.length) * 100;
@@ -132,6 +133,11 @@ export default function SurveyPage() {
   const selectedArr = Array.isArray(selected) ? selected : [];
   const selectedCount = selectedArr.filter((v) => v !== '없음').length;
   const maxReached = !!maxSelect && selectedCount >= maxSelect;
+
+  // 단계 이동 시 타이머 정리
+  useEffect(() => {
+    return () => { if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current); };
+  }, [currentStep]);
 
   function handleSelect(value: string) {
     if (isMulti) {
@@ -145,10 +151,24 @@ export default function SurveyPage() {
         } else if (!maxSelect || withoutNone.length < maxSelect) {
           setSelected([...withoutNone, value]);
         }
-        // at max: do nothing
       }
     } else {
       setSelected(value);
+      // 단일 선택: 300ms 후 자동 진행
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = setTimeout(() => {
+        const newAnswers = { ...answers, [question.id]: value };
+        setAnswers(newAnswers);
+        if (currentStep < QUESTIONS.length - 1) {
+          const nextQ = QUESTIONS[currentStep + 1];
+          const prev = newAnswers[nextQ.id];
+          setSelected(prev !== undefined ? prev : nextQ.multiSelect ? [] : null);
+          setCurrentStep((s) => s + 1);
+        } else {
+          sessionStorage.setItem('skinSurveyAnswers', JSON.stringify(newAnswers));
+          router.push('/analysis');
+        }
+      }, 300);
     }
   }
 
@@ -286,24 +306,30 @@ export default function SurveyPage() {
         })}
       </div>
 
-      {/* Next button */}
+      {/* Next button - 멀티 선택만 표시, 단일 선택은 자동 진행 */}
       <div className="mt-6 pt-4">
-        <button
-          onClick={handleNext}
-          disabled={!isValid(selected)}
-          className={`w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 ${
-            isValid(selected)
-              ? 'text-white shadow-lg active:scale-95'
-              : 'bg-beige text-text-muted cursor-not-allowed'
-          }`}
-          style={
-            isValid(selected)
-              ? { backgroundColor: '#b97070', boxShadow: '0 4px 14px rgba(185,112,112,0.3)' }
-              : {}
-          }
-        >
-          {currentStep < QUESTIONS.length - 1 ? '다음 질문' : '레시피 분석하기'}
-        </button>
+        {isMulti ? (
+          <button
+            onClick={handleNext}
+            disabled={!isValid(selected)}
+            className={`w-full py-4 rounded-2xl font-semibold text-base transition-all duration-200 ${
+              isValid(selected)
+                ? 'text-white shadow-lg active:scale-95'
+                : 'bg-beige text-text-muted cursor-not-allowed'
+            }`}
+            style={
+              isValid(selected)
+                ? { backgroundColor: '#b97070', boxShadow: '0 4px 14px rgba(185,112,112,0.3)' }
+                : {}
+            }
+          >
+            {currentStep < QUESTIONS.length - 1 ? '다음 질문' : '레시피 분석하기'}
+          </button>
+        ) : (
+          <p className="text-center text-xs text-text-muted py-2">
+            항목을 선택하면 자동으로 넘어가요
+          </p>
+        )}
       </div>
     </main>
   );
