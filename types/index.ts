@@ -5,6 +5,7 @@ export interface SurveyAnswers {
   routine: string;
   texture: string;
   avoidIngredients: string[];
+  ageGroup?: string;        // '10대' | '20대' | '30대' | '40대' | '50대이상' (optional for backward compat)
 }
 
 export interface Ingredient {

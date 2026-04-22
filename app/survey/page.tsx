@@ -107,7 +107,21 @@ const QUESTIONS: Question[] = [
       { value: '실리콘', label: '실리콘', desc: '실리콘 계열 성분을 원하지 않아요', icon: '💧' },
       { value: '글루텐프리', label: '글루텐 프리 원료만', desc: '글루텐 함유 성분을 피하고 싶어요', icon: '🌾' },
       { value: '비건', label: '비건 성분만', desc: '동물 유래 성분을 사용하지 않아요', icon: '🌱' },
+      { value: '임산부수유', label: '임산부·수유 중', desc: '레티놀·살리실산 등 주의 성분을 자동으로 제외해요', icon: '🤱' },
       { value: '없음', label: '특별히 없음', desc: '성분 제한 없이 효과를 최우선으로', icon: '✅' },
+    ],
+  },
+  {
+    id: 'ageGroup',
+    question: '연령대가 어떻게 되세요?',
+    subtitle: '나이대에 맞는 성분 배합을 추천해 드려요',
+    emoji: '🎂',
+    options: [
+      { value: '10대', label: '10대', desc: '피지·트러블 관리가 핵심인 시기예요', icon: '🌱' },
+      { value: '20대', label: '20대', desc: '예방적 관리와 기초 케어가 중요해요', icon: '✨' },
+      { value: '30대', label: '30대', desc: '탄력 저하가 시작되는 시기예요', icon: '🌸' },
+      { value: '40대', label: '40대', desc: '안티에이징이 본격적으로 필요한 시기예요', icon: '💎' },
+      { value: '50대이상', label: '50대 이상', desc: '집중 영양과 탄력 케어가 필요해요', icon: '👑' },
     ],
   },
 ];

@@ -46,7 +46,7 @@ const LABEL_MAP: Record<string, Record<string, string>> = {
 
 const AVOID_LABEL: Record<string, string> = {
   알코올: '알코올', 향료: '향료·인공향', 파라벤: '파라벤', 실리콘: '실리콘',
-  글루텐프리: '글루텐 프리', 비건: '비건 성분',
+  글루텐프리: '글루텐 프리', 비건: '비건 성분', 임산부수유: '임산부·수유 안전',
 };
 
 const MARKET_PRICE = 35000;
@@ -602,6 +602,7 @@ export default function ResultClient() {
   const concerns = Array.isArray(answers.concern) ? answers.concern : [answers.concern];
   const activeAvoid = (answers.avoidIngredients ?? []).filter((a) => a !== '없음');
   if (answers.texture === '무향저자극' && !activeAvoid.includes('향료')) activeAvoid.push('향료');
+  const isPregnant = activeAvoid.includes('임산부수유');
   const isOrganic = answers.texture === '천연오가닉';
 
   function handleRating(star: number) {
@@ -1320,6 +1321,22 @@ export default function ResultClient() {
                 >
                   🌱 이 레시피 사용 시작하기
                 </button>
+              )}
+
+              {/* 임산부/수유 안전 배지 */}
+              {isPregnant && (
+                <div className="rounded-2xl p-4 border-2" style={{ borderColor: '#86efac', backgroundColor: '#f0fdf4' }}>
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl flex-shrink-0">🤱</span>
+                    <div>
+                      <p className="font-semibold text-sm mb-1" style={{ color: '#15803d' }}>임산부·수유 안전 레시피</p>
+                      <p className="text-xs leading-relaxed" style={{ color: '#166534' }}>
+                        레티놀·살리실산·아르기렐린·고농도 AHA 등 주의 성분을 자동으로 제외했어요.
+                        그래도 사용 전 산부인과 전문의와 상담을 권장해요.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Patch test warning */}

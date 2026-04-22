@@ -78,6 +78,15 @@ export function findBestRecipe(answers: SurveyAnswers, recipes: RecipeEntry[]): 
     // 가벼운/젤 선택자 → 오일 성분 없는 레시피 가중치
     if ((answers.texture === '가벼운' || answers.texture === '젤') && !hasOil(recipe)) score += 1;
 
+    // 나이대: 30대+ → 주름탄력 레시피 가중치, 10대 → 모공트러블 가중치
+    if (answers.ageGroup) {
+      const ageConcerns = recipe.matchCriteria.concern;
+      if ((answers.ageGroup === '40대' || answers.ageGroup === '50대이상') && ageConcerns.includes('주름탄력')) score += 3;
+      if (answers.ageGroup === '30대' && ageConcerns.includes('주름탄력')) score += 1;
+      if (answers.ageGroup === '10대' && ageConcerns.includes('모공트러블')) score += 2;
+      if (answers.ageGroup === '20대' && ageConcerns.includes('미백')) score += 1;
+    }
+
     if (score > bestScore) {
       bestScore = score;
       bestRecipe = recipe;
